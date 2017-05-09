@@ -1,4 +1,4 @@
-#' Smart selection of the weeks to simuate
+#' Smart selection of the weeks to simulate
 #' 
 #' week_selection is a function which select the MC years and 
 #' weeks which will be simulated during this iteration
