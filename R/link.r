@@ -170,8 +170,8 @@ update_link <- function(link_name, property_name, new_value, opts = antaresRead:
   }
   
   #load file containing link properties            
-  link_file_name <- paste(opts$inputPath,"/links/" ,from(link_name),"/", to(link_name), ".txt",sep="")
-  
+  link_file_name <- paste(opts[[1]]$inputPath,"/links/" ,from(link_name),"/", to(link_name), ".txt",sep="")
+
   # check that this file exists
   assertthat::assert_that(file.exists(link_file_name))
   

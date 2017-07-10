@@ -56,7 +56,7 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     exp_options$master <- "relaxed"
   }
 
-  for(id_years in 1:length(studies$n_simulated_years)){
+  for(id_years in 1:studies$n_simulated_years){
   # set ANTARES study options
   set_antares_options(exp_options, candidates, studies$opts[[id_years]])
   
@@ -103,9 +103,9 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
   # create output structure 
   x <- list()
   #x$invested_capacities <- data.frame()
-  x$overall_costs <- numeric()
-  x$investment_costs <- numeric()
-  x$operation_costs <- numeric()
+  x$overall_costs <- data.frame()
+  x$investment_costs <- data.frame()
+  x$operation_costs <- data.frame()
   x$rentability <- data.frame()
   x$iterations <- list()
   x$digest <- list()
@@ -125,21 +125,44 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
   # set initial value to each investment candidate  N pour l'iteration 1
   # (here put to closest multiple of unit-size below max_invest/2)
   
-  x$invested_capacities <- data.frame(it = rep(1,n_candidates))
-  x$invested_capacities$s_years <- rep(as.numeric(studies$simulated_years[1]),n_candidates)
-  x$invested_capacities$candidate <- sapply(candidates, FUN = function(c){c$name})
+  x$invested_capacities <- data.frame(it = rep(1,n_candidates*studies$n_simulated_years))
   
-  x$invested_capacities$value<-sapply(candidates, FUN = function(c){
-    if(c$unit_size > 0)
-    {
-      out <- floor(c$max_invest/2/c$unit_size) * c$unit_size
-      out <- max(0, min(c$max_invest, out))
-    }
-    else
-    { out <- c$max_invest/2}
-    return(out)})
+  #initialize simulated years in the data frame
+  tmp_vec <- c()
+  for(id_years in 1:studies$n_simulated_years){
+  tmp_vec <- append(tmp_vec,(rep(as.numeric(studies$simulated_years[id_years]),n_candidates)))
+  }
+  x$invested_capacities$s_years <- tmp_vec
   
-  row.names(x$invested_capacities) <- sapply(candidates, FUN = function(c){paste(c$name,"_",1,sep="")})
+  #initialize the candidates in the data frame
+  tmp_vec <- c()
+  for(id_years in 1:studies$n_simulated_years){
+    tmp_vec <- append(tmp_vec,sapply(candidates, FUN = function(c){c$name}))
+  }
+  x$invested_capacities$candidate <- tmp_vec
+  
+  #set the initial values to zero in the data frame
+  x$invested_capacities$value<-rep(0,n_candidates*studies$n_simulated_years)
+  
+  #to set the initial invested capacities to half the maximum
+  # x$invested_capacities$value<-sapply(candidates, FUN = function(c){
+  #   if(c$unit_size > 0)
+  #   {
+  #     out <- floor(c$max_invest/2/c$unit_size) * c$unit_size
+  #     out <- max(0, min(c$max_invest, out))
+  #   }
+  #   else
+  #   { out <- c$max_invest/2}
+  #   return(out)})
+  
+  #name rows
+  #row.names(x$invested_capacities) <- sapply(candidates, FUN = function(c){paste(c$name,"_",1,sep="")})
+  tmp_vec <- c()
+  for(id_years in 1:studies$n_simulated_years){
+    tmp_vec <- append(tmp_vec,sapply(candidates, FUN = function(c){paste(c$name,"_",current_it$n,"_",studies$simulated_years[id_years],sep="")}))
+  }
+  row.names(x$invested_capacities) <- tmp_vec
+  
   
   #----------------------------------------------------------------------------------------------------------------
   # ----
@@ -159,36 +182,7 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     # accelerate computation time by simulating only the weeks whose cuts are
     # more likely to be activated in the master problem
     
-#-----------------------------
-
-    
-    # x$invested_capacities$value<-sapply(candidates, FUN = function(c){
-    #   if(c$unit_size > 0)
-    #   {
-    #     out <- floor(c$max_invest/2/c$unit_size) * c$unit_size
-    #     out <- max(0, min(c$max_invest, out))
-    #   }
-    #   else
-    #   { out <- c$max_invest/2}
-    #   return(out)})
-    # 
-    # row.names(x$invested_capacities) <- sapply(candidates, FUN = function(c){paste(c$name,"_",1,sep="")})
-    # 
-    # x$invested_capacities <- it = rep(current_it$n,n_candidates)
-    # x$invested_capacities$s_years <- rep(as.numeric(studies$simulated_years[1]),n_candidates)
-    # x$invested_capacities$candidate <- sapply(candidates, FUN = function(c){c$name})
-    # 
-    # x$invested_capacities$value <- sapply(candidates, FUN = function(c){
-    #   if(c$unit_size > 0){
-    #     out <- floor(c$max_invest/2/c$unit_size) * c$unit_size
-    #     out <- max(0, min(c$max_invest, out))
-    #   }
-    #   else{ out <- c$max_invest/2}
-    #   return(out)})
-    # 
-    # row.names(x$invested_capacities) <- sapply(candidates, FUN = function(c){paste(c$name,"_",current_it$n,sep="")})
-    
-#-----------------------------    
+  
     
     if(current_it$full & display){
       cat("--- ITERATION ", current_it$n, " (complete iteration, ", n_w * n_mc, " simulated weeks) ---\n", sep="")
@@ -207,12 +201,11 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
       {
       for(c in candidates)
         {
-          id_candidate_year <- paste(c$name,"_",current_it$n,sep="")
-          update_link(c$link, "direct_capacity", c$link_profile*x$invested_capacities[id_candidate_year,"value"], studies$opts[id_years])
-          update_link(c$link, "indirect_capacity", c$link_profile*x$invested_capacities[id_candidate_year,"value"], studies$opts[id_years])
-        }#c$link_profile*x$invested_capacities[id_candidate_year,]$value  (autre écriture)
+          #id_candidate_year <- paste(c$name,"_",current_it$n,sep="")
+          update_link(c$link, "direct_capacity", c$link_profile*subset(x$invested_capacities,it==current_it$n & s_years==studies$simulated_years[[id_years]] & candidate==c$name)$value, studies$opts[id_years])
+          update_link(c$link, "indirect_capacity", c$link_profile*as.numeric(subset(x$invested_capacities,it==current_it$n & s_years==studies$simulated_years[[id_years]] & candidate==c$name)$value), studies$opts[id_years])
+        }
     }
-    
     
     
     # ---- 3. Simulate ---- 
@@ -220,6 +213,7 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     # run the ANTARES simulation, load the path related to this
     # simulation and read the outputs
     
+    output_antares<-list()
     ########
     for(id_years in 1:studies$n_simulated_years)
       {
@@ -228,44 +222,52 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     run_simulation(simulation_name, mode = "economy", path_solver, wait = TRUE, show_output_on_console = FALSE, parallel = parallel, studies$opts[[id_years]])
     if(display){cat("[done] \n", sep="")}
     
-    output_antares <- antaresRead::setSimulationPath(paste0(studies$opts[[id_years]]$studyPath, "/output/", get_whole_simulation_name(simulation_name, studies$opts[[id_years]])))
+    output_antares[[id_years]] <- antaresRead::setSimulationPath(paste0(studies$opts[[id_years]]$studyPath, "/output/", get_whole_simulation_name(simulation_name, studies$opts[[id_years]])))
     }
     # read output of the simulation, for links and areas, 
     # with synthetic visions and detailed annual and weekly results
     # to avoid the sum of numeric approximations, it is advised to use the most aggregated output of ANTARES
     # (e.g. to use annual results of ANTARES instead of the sum of the weekly results)
     
-    output_link_h <- list()
-    if(utils::packageVersion("antaresRead") > "0.14.9" )
-    {
-      # hourly results
-      if (length(with_profile(candidates)) > 0 )
-      {
-        #output_link_h[[id_years]]
-        output_link_h= readAntares(areas = NULL, links = with_profile(candidates), mcYears = current_it$mc_years, 
-                                    timeStep = "hourly", opts = output_antares, showProgress = FALSE)
-        output_link_h_s = readAntares(areas = NULL, links = with_profile(candidates), mcYears = NULL, 
-                                      timeStep = "hourly", opts = output_antares, showProgress = FALSE)
-      }
-      # weekly results
-      output_area_w = antaresRead::readAntares(areas = "all", links = NULL, mcYears = current_it$mc_years, 
-                                               timeStep = "weekly", opts = output_antares, showProgress = FALSE)
-      output_link_w = antaresRead::readAntares(areas = NULL, links = "all", mcYears = current_it$mc_years, 
-                                               timeStep = "weekly", opts = output_antares, showProgress = FALSE)
-      
-      # yearly results
-      output_area_y = antaresRead::readAntares(areas = "all", links = NULL, mcYears = current_it$mc_years, 
-                                               timeStep = "annual", opts = output_antares, showProgress = FALSE)
-      output_link_y = antaresRead::readAntares(areas = NULL, links = "all", mcYears = current_it$mc_years, 
-                                               timeStep = "annual", opts = output_antares, showProgress = FALSE)
-      
-      # synthetic results
-      output_area_s = antaresRead::readAntares(areas = "all", links = NULL, mcYears = NULL, 
-                                               timeStep = "annual", opts = output_antares, showProgress = FALSE)
-      output_link_s = antaresRead::readAntares(areas = NULL, links = "all", mcYears = NULL, 
-                                               timeStep = "annual", opts = output_antares, showProgress = FALSE)
-    }
+    output_link_h<- list()
+    output_link_h_s<- list()
+    output_area_w<- list()
+    output_link_w<- list()
+    output_area_y<- list()
+    output_link_y<- list()
+    output_area_s<- list()
+    output_link_s<- list()
     
+    for(id_years in 1:studies$n_simulated_years)
+    {
+      if(utils::packageVersion("antaresRead") > "0.14.9" )
+      {
+        # hourly results
+        if (length(with_profile(candidates)) > 0 ){
+        output_link_h[[id_years]]= readAntares(areas = NULL, links = with_profile(candidates), mcYears = current_it$mc_years, 
+                                    timeStep = "hourly", opts = output_antares, showProgress = FALSE)
+        output_link_h_s[[id_years]] = readAntares(areas = NULL, links = with_profile(candidates), mcYears = NULL, 
+                                      timeStep = "hourly", opts = output_antares, showProgress = FALSE)
+        }
+        # weekly results
+        output_area_w[[id_years]] = antaresRead::readAntares(areas = "all", links = NULL, mcYears = current_it$mc_years, 
+                                                 timeStep = "weekly", opts = output_antares, showProgress = FALSE)
+        output_link_w[[id_years]] = antaresRead::readAntares(areas = NULL, links = "all", mcYears = current_it$mc_years, 
+                                                 timeStep = "weekly", opts = output_antares, showProgress = FALSE)
+        
+        # yearly results
+        output_area_y[[id_years]] = antaresRead::readAntares(areas = "all", links = NULL, mcYears = current_it$mc_years, 
+                                                 timeStep = "annual", opts = output_antares, showProgress = FALSE)
+        output_link_y[[id_years]] = antaresRead::readAntares(areas = NULL, links = "all", mcYears = current_it$mc_years, 
+                                                 timeStep = "annual", opts = output_antares, showProgress = FALSE)
+      
+        # synthetic results
+        output_area_s[[id_years]] = antaresRead::readAntares(areas = "all", links = NULL, mcYears = NULL, 
+                                                 timeStep = "annual", opts = output_antares, showProgress = FALSE)
+        output_link_s[[id_years]] = antaresRead::readAntares(areas = NULL, links = "all", mcYears = NULL, 
+                                                 timeStep = "annual", opts = output_antares, showProgress = FALSE)
+      }
+    }
     
     # ---- 4. Assess system costs and marginal rentability of each investment candidate ---- 
     
@@ -274,42 +276,56 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     
     # compute system costs (can only be assessed if a complete
     # simulation - with all weeks and all mc - has been run)
-    if(current_it$full)
+    op_cost<-list()
+    inv_cost<-list()
+    
+    for(id_years in 1:studies$n_simulated_years)
     {
-      if (exp_options$uc_type == "relaxed_fast")
+      if(current_it$full)
       {
-        # in that case, non-linear cost has to be removed because they are computed in a post-processing and are not
-        # part of the ANTARES optimization
-        op_cost <-  sum(as.numeric(output_area_s$"OV. COST"))  + sum(as.numeric(output_link_s$"HURDLE COST")) -
-          sum(as.numeric(output_area_s$"NP COST"))
+        if (exp_options$uc_type == "relaxed_fast")
+        {
+          # in that case, non-linear cost has to be removed because they are computed in a post-processing and are not
+          # part of the ANTARES optimization
+          op_cost[[id_years]] <-  sum(as.numeric(output_area_s[[id_years]]$"OV. COST"))  + sum(as.numeric(output_link_s[[id_years]]$"HURDLE COST")) -
+            sum(as.numeric(output_area_s$"NP COST"))
+        }
+        else
+        {
+          op_cost[[id_years]] <-  sum(as.numeric(output_area_s$"OV. COST"))  + sum(as.numeric(output_link_s$"HURDLE COST")) 
+        }
+        inv_cost[[id_years]] <- sum(sapply(candidates, FUN = function(c){c$cost * subset(x$invested_capacities,it==current_it$n & s_years==studies$simulated_years[[id_years]] & candidate==c$name)$value}))
+        inv_cost[[id_years]] <- inv_cost[[id_years]] * n_w / 52 # adjusted to the period of the simulation
+        ov_cost[[id_years]] <-  op_cost[[id_years]] + inv_cost[[id_years]]
       }
       else
       {
-        op_cost <-  sum(as.numeric(output_area_s$"OV. COST"))  + sum(as.numeric(output_link_s$"HURDLE COST")) 
+        op_cost[[id_years]] <- NA
+        inv_cost[[id_years]] <- sum(sapply(candidates, FUN = function(c){c$cost * subset(x$invested_capacities,it==current_it$n & s_years==studies$simulated_years[[id_years]] & candidate==c$name)$value}))
+        ov_cost[[id_years]] <- NA
       }
-      inv_cost <- sum(sapply(candidates, FUN = function(c){c$cost * x$invested_capacities[paste(c$name,"_",current_it$n,sep=""), "it"]}))
-      inv_cost <- inv_cost * n_w / 52 # adjusted to the period of the simulation
-      ov_cost <-  op_cost + inv_cost
-    }
-    else
-    {
-      op_cost <- NA
-      inv_cost <- sum(sapply(candidates, FUN = function(c){c$cost * x$invested_capacities[paste(c$name,"_",current_it$n,sep=""), "it"]}))
-      ov_cost <- NA
-    }
+      # update output structure
+      # new data frame, column it, s_year and value
+      #x$investment_costs<-data.frame()
+      x$investment_costs$it<- rep(current_it,studies$n_simulated_years)
+      
+      tmp_vec<-c()
+      for(id_years in 1:studies$n_simulated_years)
+      {
+      tmp_vec<-append(tmp_vec,studies$simulated_years[id_years])
+      }
+      x$investment_costs$s_years<-tmp_vec
+       
+      x$investment_costs<- c(x$investment_costs, inv_cost)
+      x$operation_costs <- c(x$operation_costs, op_cost)
+      x$overall_costs <- c(x$overall_costs, ov_cost)
     
-    # update output structure
-     # new data frame, column it, s_year and value
-    x$investment_costs<- c(x$investment_costs, inv_cost)
-    x$operation_costs <- c(x$operation_costs, op_cost)
-    x$overall_costs <- c(x$overall_costs, ov_cost)
-    
-    if(current_it$full)
-    {
-      # check if the current iteration provides the best solution
-      if(ov_cost <= min(x$overall_costs, na.rm = TRUE)) {best_solution = current_it$n}
-    }
-    
+      if(current_it$full)
+      {
+        # check if the current iteration provides the best solution
+        if(ov_cost <= min(x$overall_costs, na.rm = TRUE)) {best_solution = current_it$n}
+      }
+  }
     # compute average rentability of each candidate (can only
     # be assessed if a complete simulation has been run)
     # + compute LOLE for each area
@@ -349,16 +365,16 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
       x$digest$lole[[current_it$id]] <- lole
     }
     
-    
-    
-    # print results of the ANTARES simulation
-    if(display & current_it$full)
+    #YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY ECRIRE CORRECTEMENT AVEC ANNEES
+    for(id_years in 1:studies$n_simulated_years)
     {
-      for (c in candidates){cat( "     . ", c$name, " -- ", x$invested_capacities[paste(c$name,"_",current_it$n,sep=""), "it"], " invested MW -- rentability = ", round(x$rentability[c$name, current_it$id]/1000), "ke/MW \n" , sep="")}
-      cat("--- op.cost = ", op_cost/1000000, " Me --- inv.cost = ", inv_cost/1000000, " Me --- ov.cost = ", ov_cost/1000000, " Me ---\n")
+      # print results of the ANTARES simulation
+      if(display & current_it$full)
+      {
+        for (c in candidates){cat( "     . ", c$name, " -- ", x$invested_capacities[paste(c$name,"_",current_it$n,sep=""), "it"], " invested MW -- rentability = ", round(x$rentability[c$name, current_it$id]/1000), "ke/MW \n" , sep="")}
+        cat("--- op.cost = ", op_cost/1000000, " Me --- inv.cost = ", inv_cost/1000000, " Me --- ov.cost = ", ov_cost/1000000, " Me ---\n")
+      }
     }
-    
-    
     
     
     # ---- 5. Update cuts ---- 
@@ -487,7 +503,6 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     # x$iterations[[current_it$n]] <- current_it
     # current_it$n = current_it$n +1
 
-
     # ---- 8. Update investment decisions ----
 
     # update investment decision to prepare next iteration
@@ -496,8 +511,24 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     # {
     #   x$invested_capacities[[paste0("it", current_it$n)]] <- benders_sol
     # }
-    # 
-    # 
+
+    #add rows to the invested_capacities$data_frame
+    assertthat::assert_that(current_it$n>1)
+    if(!has_converged && current_it$n <= exp_options$max_iteration)
+      for(id_years in 1:studies$n_simulated_years)
+        for(c in candidates)
+        {
+          {  
+            x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],candidates$name,subset(benders_sol,candidate==c$name)$value))  
+          }
+        }
+    }
+    #benders_sol is a data frame with 2 columns: candidate and value (benders_sol only exists for one iteration)
+    #-----------------------------  
+    
+    
+    
+    
     # # ---- 9. Clean ANTARES output ----
     # if(clean) { clean_output_benders(best_solution, unique_key, opts)}
 
@@ -505,46 +536,46 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
 
 
 
-  # add information in the output file
-  option_file_name_2 <- paste0(opts$studyPath,"/user/expansion/settings.ini")
-  x$expansion_options <- read_options(option_file_name_2)
-  x$study_options <- opts
-  x$candidates <- read_candidates(candidates_file_name,opts)
-
-  # reset options of the ANTARES study to their initial values
-  assertthat::assert_that(file.remove(paste0(opts$studyPath, "/settings/generaldata.ini")))
-  assertthat::assert_that(file.rename(from = paste0(opts$studyPath, "/settings/generaldata_tmpsvg.ini"),
-                                      to = paste0(opts$studyPath, "/settings/generaldata.ini")))
-
-
-  # set link capacities to their optimal value
-  for(c in candidates)
-  {
-    update_link(c$link, "direct_capacity", x$invested_capacities[c$name, paste0("it", best_solution)] , opts)
-    update_link(c$link, "indirect_capacity", x$invested_capacities[c$name, paste0("it", best_solution)], opts)
-  }
-
-
-  # save output file
-  # copy the benders_out into a Rdata in the temporary folder
-  tmp_folder <- paste(opts$studyPath,"/user/expansion/temp",sep="")
-  if(!dir.exists(tmp_folder))
-  {
-    dir.create(tmp_folder)
-  }
-
-  saveRDS(x, file = paste0(tmp_folder, "/data_for_report.RDS"))
-
-  # create report
-  if(report)
-  {
-    if(display)
-    {
-      cat("Write report in user/expansion/report directory \n")
-    }
-
-    rmarkdown::render(input = system.file("rmd/report.Rmd", package = "antaresXpansion"),
-                      output_file = default_report_file(opts), params = x, quiet = TRUE)
-  }
+  # # add information in the output file
+  # option_file_name_2 <- paste0(opts$studyPath,"/user/expansion/settings.ini")
+  # x$expansion_options <- read_options(option_file_name_2)
+  # x$study_options <- opts
+  # x$candidates <- read_candidates(candidates_file_name,opts)
+  # 
+  # # reset options of the ANTARES study to their initial values
+  # assertthat::assert_that(file.remove(paste0(opts$studyPath, "/settings/generaldata.ini")))
+  # assertthat::assert_that(file.rename(from = paste0(opts$studyPath, "/settings/generaldata_tmpsvg.ini"),
+  #                                     to = paste0(opts$studyPath, "/settings/generaldata.ini")))
+  # 
+  # 
+  # # set link capacities to their optimal value
+  # for(c in candidates)
+  # {
+  #   update_link(c$link, "direct_capacity", x$invested_capacities[c$name, paste0("it", best_solution)] , opts)
+  #   update_link(c$link, "indirect_capacity", x$invested_capacities[c$name, paste0("it", best_solution)], opts)
+  # }
+  # 
+  # 
+  # # save output file
+  # # copy the benders_out into a Rdata in the temporary folder
+  # tmp_folder <- paste(opts$studyPath,"/user/expansion/temp",sep="")
+  # if(!dir.exists(tmp_folder))
+  # {
+  #   dir.create(tmp_folder)
+  # }
+  # 
+  # saveRDS(x, file = paste0(tmp_folder, "/data_for_report.RDS"))
+  # 
+  # # create report
+  # if(report)
+  # {
+  #   if(display)
+  #   {
+  #     cat("Write report in user/expansion/report directory \n")
+  #   }
+  # 
+  #   rmarkdown::render(input = system.file("rmd/report.Rmd", package = "antaresXpansion"),
+  #                     output_file = default_report_file(opts), params = x, quiet = TRUE)
+  # }
   #---------------------------------------------------------------------------------------------------------------
 }
