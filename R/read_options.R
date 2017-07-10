@@ -1,12 +1,12 @@
 
 #' Read expansion planning options
 #' 
-#' \code{read_options} is a function which read the options related to the
+#' \code{read_options} is a function which reads the options related to the
 #' expansion planning optimization. The options are stored in the file 
 #' antaresStudyPath/user/expansion/settings.ini.
 #' 
-#' @param opts
-#'   list of simulation parameters returned by the function
+#' @param option_file_name
+#'   name of the options file to be read 
 #'   \code{antaresRead::setSimulationPath}
 #'
 #' @return 
@@ -17,10 +17,10 @@
 #' @export
 #' 
 #' 
-#' 
-read_options <- function(opts = antaresRead::simOptions())
+# opts = antaresRead::simOptions()
+#
+read_options <- function(option_file_name)
 {
-  option_file_name <- paste(opts$studyPath,"/user/expansion/settings.ini",sep="")
   assertthat::assert_that(file.exists(option_file_name))
   assertthat::assert_that(file.info(option_file_name)$size !=0)
   
@@ -37,7 +37,8 @@ read_options <- function(opts = antaresRead::simOptions())
   options$cut_type <- "yearly"
   options$week_selection <- FALSE
   options$relaxed_optimality_gap <- "0.01%"
-
+  options$discount_rate<-"5.5%"
+  
   # go through every line of the file
   for(line in 1:length(param_data))
   {
@@ -123,6 +124,24 @@ read_options <- function(opts = antaresRead::simOptions())
       }
       
     }
+    # read the discount rate
+    else if (option_name == "discount_rate")
+    {
+      # if the value is numeric, it is the percentage (example:0.08)
+      if (!is.na(suppressWarnings(as.numeric(option_value)))) 
+      {
+        options$discount_rate <- as.numeric(option_value)
+      }
+      # else, the discount rate is given as a percentage (e.g 5.5 %) 
+      else
+      {
+        option_value <- gsub(" ", "", option_value, fixed = TRUE) 
+        assertthat::assert_that(grepl("%$", option_value)) 
+        option_value_bis <- gsub("%$", "", option_value) 
+        assertthat::assert_that(!is.na(as.numeric(option_value_bis)))
+        options$discount_rate <- (as.numeric(option_value_bis)/100)
+      }
+    }
     else
     {
       warning(paste0("Unknown option : ", option_name))
@@ -131,3 +150,4 @@ read_options <- function(opts = antaresRead::simOptions())
   
   return(options)
 }
+

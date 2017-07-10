@@ -1,7 +1,7 @@
 
 #' Read investment candidates with their characteristics
 #' 
-#' \code{read_candidates} is a function which read the investments candidates
+#' \code{read_candidates} is a function which reads the investments candidates
 #' of the expansion planning problem and their characteristics. The information on
 #' the candidates is stored in the file antaresStudyPath/user/expansion/candidates.ini.
 #'   
@@ -17,10 +17,11 @@
 #' @export
 #' 
 #' 
-#' 
-read_candidates <- function(opts = antaresRead::simOptions())
+#opts = antaresRead::simOptions()
+read_candidates <- function(candidates_file_name,opts)
 {
-  candidates_file_name <- paste(opts$studyPath,"/user/expansion/candidates.ini",sep="")
+  #candidates_file_name <- paste0(opts$studyPath,"/user/expansion/candidates.ini")
+  directory_path<-dirname(candidates_file_name)
   assertthat::assert_that(file.exists(candidates_file_name))
   assertthat::assert_that(file.info(candidates_file_name)$size !=0)
   
@@ -55,7 +56,12 @@ read_candidates <- function(opts = antaresRead::simOptions())
     candidate$relaxed <- FALSE
     candidate$has_link_profile <- FALSE
     candidate$link_profile <- 1#  data.frame(rep(1,8760))
-      
+    candidate$initial_capacity_in_MW<-0
+    candidate$mothball_cost_in_euro<-0
+    candidate$investment_cost_in_euro<-0
+    candidate$operation_and_maintenance_cost_in_euro<-0
+    candidate$decommisionning_profile=FALSE  
+    
     # read candidate characteristics
     for(line in (index[pr]+1):(index[pr+1]-1))
     {
@@ -75,6 +81,32 @@ read_candidates <- function(opts = antaresRead::simOptions())
       if (option_name == "name")
       {
         candidate$name <- option_value
+      }else if (option_name == "decommissioning_profile")
+      {
+        assertthat::assert_that(file.exists(paste0(directory_path, "/deco_profile")))
+        candidate$decommissioning_profile<-paste0(directory_path,"/deco_profile/")
+        candidate$decommissioning_profile<-paste0(candidate$decommissioning_profile,candidate$name)
+        candidate$decommissioning_profile<-paste0(candidate$decommissioning_profile,".txt")
+      }
+      else if (option_name == "operation_and_maintenance_cost_in_euro")
+      {
+        assertthat::assert_that(!is.na(as.numeric(option_value)))
+        candidate$operation_and_maintenance_cost <- as.numeric(option_value)
+      }
+      else if (option_name == "investment_cost_in_euro")
+      {
+        assertthat::assert_that(!is.na(as.numeric(option_value)))
+        candidate$investment_cost <- as.numeric(option_value)
+      }
+      else if (option_name == "mothball_cost_in_euro")
+      {
+        assertthat::assert_that(!is.na(as.numeric(option_value)))
+        candidate$mothball_cost <- as.numeric(option_value)
+      }
+      else if (option_name == "initial_capacity_in_MW")
+      {
+        assertthat::assert_that(!is.na(as.numeric(option_value)))
+        candidate$initial_capacity <- as.numeric(option_value)
       }
       else if (option_name == "candidate-type")
       {
@@ -150,9 +182,14 @@ read_candidates <- function(opts = antaresRead::simOptions())
     assertthat::assert_that(candidate$unit_size >= 0)
     assertthat::assert_that(candidate$max_unit >= 0)
     assertthat::assert_that(candidate$max_invest >= 0)
+    assertthat::assert_that(candidate$initial_capacity >= 0)
+    assertthat::assert_that(candidate$mothball_cost >= 0)
+    assertthat::assert_that(candidate$investment_cost >= 0)
+    assertthat::assert_that(candidate$operation_and_maintenance_cost >= 0)
     assertthat::assert_that(!is.na(candidate$name))
     assertthat::assert_that(!is.na(candidate$link))
     assertthat::assert_that(candidate$link %in% opts$linkList)
+    
     
     # update candidate list
     inv[[i]] <- candidate
