@@ -104,10 +104,10 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
   x <- list()
   #x$invested_capacities <- data.frame()
   #x$costs <- data.frame() #a data frame with the different costs: investment, operation and overall ones 
-  x$rentability <- data.frame()
+  #x$rentability <- data.frame()
   x$iterations <- list()
   x$digest <- list()
-  x$digest$lole <- data.frame()
+  #x$digest$lole <- data.frame()
   
   # create iteration structure
   current_it <- list()
@@ -290,11 +290,11 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
           # in that case, non-linear cost has to be removed because they are computed in a post-processing and are not
           # part of the ANTARES optimization
           op_cost[[id_years]] <-  sum(as.numeric(output_area_s[[id_years]]$"OV. COST"))  + sum(as.numeric(output_link_s[[id_years]]$"HURDLE COST")) -
-            sum(as.numeric(output_area_s$"NP COST"))
+            sum(as.numeric(output_area_s[[id_years]]$"NP COST"))
         }
         else
         {
-          op_cost[[id_years]] <-  sum(as.numeric(output_area_s$"OV. COST"))  + sum(as.numeric(output_link_s$"HURDLE COST")) 
+          op_cost[[id_years]] <-  sum(as.numeric(output_area_s[[id_years]]$"OV. COST"))  + sum(as.numeric(output_link_s$"HURDLE COST")) 
         }
         inv_cost[[id_years]] <- sum(sapply(candidates, FUN = function(c){c$cost * subset(x$invested_capacities,it==current_it$n & s_years==studies$simulated_years[[id_years]] & candidate==c$name)$value}))
         inv_cost[[id_years]] <- inv_cost[[id_years]] * n_w / 52 # adjusted to the period of the simulation
@@ -347,7 +347,7 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
             }
       }
     
-        
+  has_converged<-TRUE     
   }#end of the while loop
       
       #to erase: x$operation_costs x$overall_costs x$investment_costs
@@ -356,43 +356,75 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
         if(current_it$full)
         {
           # check if the current iteration provides the best solution
-          if(ov_cost[[id_years]] <= min(x$overall_costs, na.rm = TRUE)) {best_solution = current_it$n}
+          if(ov_cost[[id_years]] <= min(subset(x$costs,it==current_it$n,s_years==studies$simulated_years[[id_years]])$overall, na.rm = TRUE)) {best_solution = current_it$n}
         }
     }
     # compute average rentability of each candidate (can only
     # be assessed if a complete simulation has been run)
     # + compute LOLE for each area
-    if(current_it$full)
-    {
-      get_avg_rentability <- function(c)
+    average_rentability<-list()
+    lole<-list()
+    for(id_years in 1:studies$n_simulated_years)
+    {  
+     if(current_it$full)
       {
-        if(c$has_link_profile)
+        get_avg_rentability <- function(c)
         {
-          return(sum(as.numeric(subset(output_link_h_s, link == c$link)$"MARG. COST")*c$link_profile) - c$cost * n_w / 52) 
+          if(c$has_link_profile)
+          {
+            return(sum(as.numeric(subset(output_link_h_s[[id_years]], link == c$link)$"MARG. COST")*c$link_profile) - c$cost * n_w / 52) 
+          }
+          else 
+          {
+            return(sum(as.numeric(subset(output_link_s[[id_years]], link == c$link)$"MARG. COST")) - c$cost * n_w / 52)
+          }
         }
-        else 
-        {
-          return(sum(as.numeric(subset(output_link_s, link == c$link)$"MARG. COST")) - c$cost * n_w / 52)
-        }
+        average_rentability[[id_years]] <- sapply(candidates, FUN = get_avg_rentability)
+        lole[[id_years]] <- sapply(all_areas, FUN = function(a){as.numeric(subset(output_area_s[[id_years]], area == a)$"LOLD")}) 
       }
-      average_rentability <- sapply(candidates, FUN = get_avg_rentability)
-      lole <- sapply(all_areas, FUN = function(a){as.numeric(subset(output_area_s, area == a)$"LOLD")}) 
-    }
-    else
-    {
-      average_rentability <- rep(NA, n_candidates)
-      lole <- rep(NA, length(all_areas))
+      else
+      {
+        average_rentability[[id_years]] <- rep(NA, n_candidates)
+        lole[[id_years]] <- rep(NA, length(all_areas))
+      }
     }
     
     # update output structure
+    # x$rentability is a data frame with 4 columns: it s_years candidate value
     if(current_it$n == 1)
     {
-      x$rentability <- data.frame(it1 = average_rentability)
-      row.names(x$rentability) <- sapply(candidates, FUN = function(c){c$name})
-      x$digest$lole <- data.frame(it1 = lole)
-      row.names(x$digest$lole) <- all_areas
+      x$rentability <- data.frame(it = rep(1,n_candidates*studies$n_simulated_years))
+      x$rentability$s_years <-rep(studies$simulated_years[1:studies$n_simulated_years],each=n_candidates)
+      #creating the candidate column
+      tmp_vec <- c()
+      for(id_years in 1:studies$n_simulated_years){
+        tmp_vec <- append(tmp_vec,sapply(candidates, FUN = function(c){c$name}))
+      }
+      x$rentability$candidate <- tmp_vec
+      
+      tmp_vec <- c()
+      for(id_years in 1:studies$n_simulated_years)
+      {  
+        tmp_vec<-c(tmp_vec,average_rentability[id_years])
+      }
+      x$rentablity$value<-tmp_vec
+      
+      #row.names(x$rentability) <- sapply(candidates, FUN = function(c){c$name})
+      
+      n_areas<-length(getAreas())
+      x$digest <- data.frame(it = rep(1,n_areas*studies$n_simulated_years))
+      x$digest <-rep(studies$simulated_years[1:studies$n_simulated_years],each=n_areas)
+      x$digest$area<-getAreas()
+      tmp_vec <- c()
+      for(id_years in 1:studies$n_simulated_years)
+      {  
+        tmp_vec<-c(tmp_vec,lole[id_years])
+      }
+      x$digest$lole<-tmp_vec
+      
+      #row.names(x$digest$lole) <- all_areas
     }
-    else 
+    else #AFAIRE!!!!!!!!!!!!!!!!! AJOUTEZ LES LIGNES
     {
       x$rentability[[current_it$id]] <- average_rentability
       x$digest$lole[[current_it$id]] <- lole
@@ -441,11 +473,11 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
         if(current_it$cut_type == "yearly")
         {
           assert_that(all(current_it$weeks == weeks))
-          update_yearly_cuts(current_it,candidates, output_area_y, output_link_y, output_link_h, inv_cost[[id_years]], n_w, tmp_folder, exp_options)
+          update_yearly_cuts(current_it,candidates, output_area_y[[id_years]], output_link_y, output_link_h, inv_cost[[id_years]], n_w, tmp_folder, exp_options)
         }
         if(current_it$cut_type == "weekly")
         {
-          update_weekly_cuts(current_it, candidates, output_area_w, output_link_w, output_link_h, inv_cost[[id_years]], tmp_folder, exp_options)
+          update_weekly_cuts(current_it, candidates, output_area_w[[id_years]], output_link_w, output_link_h, inv_cost[[id_years]], tmp_folder, exp_options)
         }
       }
     
