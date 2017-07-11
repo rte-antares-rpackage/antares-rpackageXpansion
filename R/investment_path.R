@@ -127,15 +127,13 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
   
   #initialize simulated years in the data frame
   
-  tmp_vec <- c()
-  for(id_years in 1:studies$n_simulated_years){
-  tmp_vec <- append(tmp_vec,(rep(as.numeric(studies$simulated_years[id_years]),n_candidates)))
-  }
-  x$invested_capacities$s_years <- tmp_vec
+  # tmp_vec <- c()
+  # for(id_years in 1:studies$n_simulated_years){
+  # tmp_vec <- append(tmp_vec,(rep(as.numeric(studies$simulated_years[id_years]),n_candidates)))
+  # }
+  #x$invested_capacities$s_years <- tmp_vec
   
-  
-  #x$invested_capacities$s_years<-sapply(1:n_candidates,FUN = function(c){studies$simulated_years[c]})
-  
+  x$invested_capacities$s_years <-rep(studies$simulated_years[1:studies$n_simulated_years],each=n_candidates)
   
   #initialize the candidates in the data frame
   tmp_vec <- c()
