@@ -103,9 +103,7 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
   # create output structure 
   x <- list()
   #x$invested_capacities <- data.frame()
-  x$overall_costs <- data.frame()
-  x$investment_costs <- data.frame()
-  x$operation_costs <- data.frame()
+  #x$costs <- data.frame() #a data frame with the different costs: investment, operation and overall ones 
   x$rentability <- data.frame()
   x$iterations <- list()
   x$digest <- list()
@@ -128,11 +126,16 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
   x$invested_capacities <- data.frame(it = rep(1,n_candidates*studies$n_simulated_years))
   
   #initialize simulated years in the data frame
+  
   tmp_vec <- c()
   for(id_years in 1:studies$n_simulated_years){
   tmp_vec <- append(tmp_vec,(rep(as.numeric(studies$simulated_years[id_years]),n_candidates)))
   }
   x$invested_capacities$s_years <- tmp_vec
+  
+  
+  #x$invested_capacities$s_years<-sapply(1:n_candidates,FUN = function(c){studies$simulated_years[c]})
+  
   
   #initialize the candidates in the data frame
   tmp_vec <- c()
@@ -245,27 +248,27 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
         # hourly results
         if (length(with_profile(candidates)) > 0 ){
         output_link_h[[id_years]]= readAntares(areas = NULL, links = with_profile(candidates), mcYears = current_it$mc_years, 
-                                    timeStep = "hourly", opts = output_antares, showProgress = FALSE)
+                                    timeStep = "hourly", opts = output_antares[[id_years]], showProgress = FALSE)
         output_link_h_s[[id_years]] = readAntares(areas = NULL, links = with_profile(candidates), mcYears = NULL, 
-                                      timeStep = "hourly", opts = output_antares, showProgress = FALSE)
+                                      timeStep = "hourly", opts = output_antares[[id_years]], showProgress = FALSE)
         }
         # weekly results
         output_area_w[[id_years]] = antaresRead::readAntares(areas = "all", links = NULL, mcYears = current_it$mc_years, 
-                                                 timeStep = "weekly", opts = output_antares, showProgress = FALSE)
+                                                 timeStep = "weekly", opts = output_antares[[id_years]], showProgress = FALSE)
         output_link_w[[id_years]] = antaresRead::readAntares(areas = NULL, links = "all", mcYears = current_it$mc_years, 
-                                                 timeStep = "weekly", opts = output_antares, showProgress = FALSE)
+                                                 timeStep = "weekly", opts = output_antares[[id_years]], showProgress = FALSE)
         
         # yearly results
         output_area_y[[id_years]] = antaresRead::readAntares(areas = "all", links = NULL, mcYears = current_it$mc_years, 
-                                                 timeStep = "annual", opts = output_antares, showProgress = FALSE)
+                                                 timeStep = "annual", opts = output_antares[[id_years]], showProgress = FALSE)
         output_link_y[[id_years]] = antaresRead::readAntares(areas = NULL, links = "all", mcYears = current_it$mc_years, 
-                                                 timeStep = "annual", opts = output_antares, showProgress = FALSE)
+                                                 timeStep = "annual", opts = output_antares[[id_years]], showProgress = FALSE)
       
         # synthetic results
         output_area_s[[id_years]] = antaresRead::readAntares(areas = "all", links = NULL, mcYears = NULL, 
-                                                 timeStep = "annual", opts = output_antares, showProgress = FALSE)
+                                                 timeStep = "annual", opts = output_antares[[id_years]], showProgress = FALSE)
         output_link_s[[id_years]] = antaresRead::readAntares(areas = NULL, links = "all", mcYears = NULL, 
-                                                 timeStep = "annual", opts = output_antares, showProgress = FALSE)
+                                                 timeStep = "annual", opts = output_antares[[id_years]], showProgress = FALSE)
       }
     }
     
@@ -278,6 +281,7 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     # simulation - with all weeks and all mc - has been run)
     op_cost<-list()
     inv_cost<-list()
+    ov_cost<-list()
     
     for(id_years in 1:studies$n_simulated_years)
     {
@@ -305,27 +309,58 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
         ov_cost[[id_years]] <- NA
       }
       # update output structure
-      # new data frame, column it, s_year and value
-      #x$investment_costs<-data.frame()
-      x$investment_costs$it<- rep(current_it,studies$n_simulated_years)
-      
-      tmp_vec<-c()
-      for(id_years in 1:studies$n_simulated_years)
-      {
-      tmp_vec<-append(tmp_vec,studies$simulated_years[id_years])
-      }
-      x$investment_costs$s_years<-tmp_vec
-       
-      x$investment_costs<- c(x$investment_costs, inv_cost)
-      x$operation_costs <- c(x$operation_costs, op_cost)
-      x$overall_costs <- c(x$overall_costs, ov_cost)
+    }#end of the for id_years loop  
     
-      if(current_it$full)
-      {
-        # check if the current iteration provides the best solution
-        if(ov_cost <= min(x$overall_costs, na.rm = TRUE)) {best_solution = current_it$n}
+      if (current_it$n==1){
+        # x$investment_costs: new data frame, column it, s_year and value
+        
+        #column it of the data frame x$costs
+        x$costs<-data.frame(it=rep(current_it$n,studies$n_simulated_years))
+        x$costs$it<- rep(current_it$n,studies$n_simulated_years)
+        
+        #column s_years of the data frame x$ investment_cost
+        tmp_vec<-c()
+        for(id_years in 1:studies$n_simulated_years)
+        {
+          tmp_vec<-append(tmp_vec,studies$simulated_years[id_years])
+        }
+        x$costs$s_years<-tmp_vec
+        
+        
+        #column value of the data frame x$costs$investment $operation $overall
+        tmp_vec_investment<-c()
+        tmp_vec_operation<-c()
+        tmp_vec_overall<-c()
+        for(id_years in 1:studies$n_simulated_years)
+        {
+          tmp_vec_investment<-append(tmp_vec_investment,inv_cost[id_years])
+          tmp_vec_operation<-append(tmp_vec_operation,op_cost[id_years])
+          tmp_vec_overall<-append(tmp_vec_overall,ov_cost[id_years])
+        }
+        x$costs$investment<-tmp_vec_investment
+        x$costs$operation<-tmp_vec_operation
+        x$costs$overall<-tmp_vec_overall
       }
-  }
+      else{#not the first iteration, the data frame is completed
+        assertthat::assert_that(current_it$n>1)
+        for(id_years in 1:studies$n_simulated_years)
+            {  
+              x$costs<-rbind(x$costs,c(current_it$n,studies$simulated_years[id_years],inv_cost[id_years],op_cost[id_years],ov_cost[id_years]))  
+            }
+      }
+    
+        
+  }#end of the while loop
+      
+      #to erase: x$operation_costs x$overall_costs x$investment_costs
+    for(id_years in 1:studies$n_simulated_years)
+      {  
+        if(current_it$full)
+        {
+          # check if the current iteration provides the best solution
+          if(ov_cost[[id_years]] <= min(x$overall_costs, na.rm = TRUE)) {best_solution = current_it$n}
+        }
+    }
     # compute average rentability of each candidate (can only
     # be assessed if a complete simulation has been run)
     # + compute LOLE for each area
@@ -372,7 +407,7 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
       if(display & current_it$full)
       {
         for (c in candidates){cat( "     . ", c$name, " -- ", x$invested_capacities[paste(c$name,"_",current_it$n,sep=""), "it"], " invested MW -- rentability = ", round(x$rentability[c$name, current_it$id]/1000), "ke/MW \n" , sep="")}
-        cat("--- op.cost = ", op_cost/1000000, " Me --- inv.cost = ", inv_cost/1000000, " Me --- ov.cost = ", ov_cost/1000000, " Me ---\n")
+        cat("--- op.cost = ", op_cost[[id_years]]/1000000, " Me --- inv.cost = ", inv_cost[[id_years]]/1000000, " Me --- ov.cost = ", ov_cost[[id_years]]/1000000, " Me ---\n")
       }
     }
     
@@ -397,22 +432,24 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     }
     write(script, file = paste0(tmp_folder, "/in_z0.txt"), append = TRUE )  
     
-    # write costs and cuts files 
-    if(current_it$cut_type == "average")
-    {
-      assert_that(current_it$full)
-      update_average_cuts(current_it, candidates, output_link_s, output_link_h_s, ov_cost, n_w, tmp_folder, exp_options)
-    }
-    if(current_it$cut_type == "yearly")
-    {
-      assert_that(all(current_it$weeks == weeks))
-      update_yearly_cuts(current_it,candidates, output_area_y, output_link_y, output_link_h, inv_cost, n_w, tmp_folder, exp_options)
-    }
-    if(current_it$cut_type == "weekly")
-    {
-      update_weekly_cuts(current_it, candidates, output_area_w, output_link_w, output_link_h, inv_cost, tmp_folder, exp_options)
-    }
-    
+      for(id_years in 1:studies$n_simulated_years)
+      {
+        # write costs and cuts files 
+        if(current_it$cut_type == "average")
+        {
+         assert_that(current_it$full)
+         update_average_cuts(current_it, candidates, output_link_s, output_link_h_s, ov_cost[[id_years]], n_w, tmp_folder, exp_options)
+        }
+        if(current_it$cut_type == "yearly")
+        {
+          assert_that(all(current_it$weeks == weeks))
+          update_yearly_cuts(current_it,candidates, output_area_y, output_link_y, output_link_h, inv_cost[[id_years]], n_w, tmp_folder, exp_options)
+        }
+        if(current_it$cut_type == "weekly")
+        {
+          update_weekly_cuts(current_it, candidates, output_area_w, output_link_w, output_link_h, inv_cost[[id_years]], tmp_folder, exp_options)
+        }
+      }
     
     
     # # ---- 6. solve master problem ----
@@ -512,17 +549,21 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     #   x$invested_capacities[[paste0("it", current_it$n)]] <- benders_sol
     # }
 
-    #add rows to the invested_capacities$data_frame
+    #add rows to the x$invested_capacities data_frame
     assertthat::assert_that(current_it$n>1)
     if(!has_converged && current_it$n <= exp_options$max_iteration)
+    {  
       for(id_years in 1:studies$n_simulated_years)
+      {
         for(c in candidates)
         {
           {  
             x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],candidates$name,subset(benders_sol,candidate==c$name)$value))  
           }
         }
+      }
     }
+  
     #benders_sol is a data frame with 2 columns: candidate and value (benders_sol only exists for one iteration)
     #-----------------------------  
     
@@ -532,7 +573,7 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     # # ---- 9. Clean ANTARES output ----
     # if(clean) { clean_output_benders(best_solution, unique_key, opts)}
 
-  }
+
 
 
 
