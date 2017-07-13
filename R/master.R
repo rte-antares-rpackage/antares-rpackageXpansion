@@ -112,7 +112,7 @@ initiate_master <- function(candidates = read_candidates(opts), exp_options = re
 }
 
 
-initiate_master_path <- function(candidates, exp_options = read_options(opts), opts,directory_path)
+initiate_master_path <- function(candidates, studies, exp_options = read_options(opts), opts,directory_path)
 {
   # ampl file names (stored in inst folder)
   run_path_file <- "ampl/master_path_run.ampl"
@@ -121,6 +121,7 @@ initiate_master_path <- function(candidates, exp_options = read_options(opts), o
   
   # master input/output files (interface with AMPL is ensured with .txt files)
   in_out_files <- list()
+  in_out_files$simulated_years <- "in_simulated_years.txt"
   in_out_files$mc <- "in_mc.txt"
   in_out_files$w <- "in_week.txt"
   in_out_files$candidates <- "in_candidates.txt"
@@ -198,6 +199,18 @@ initiate_master_path <- function(candidates, exp_options = read_options(opts), o
   #{
   #  write("option relax_integrality 1;", file = paste0(tmp_folder, "/", in_out_files$options))
   #}
+  
+  # 5 - in_simulated_years.txt
+  simulated_years<-""
+  for(id_years in 1:studies$n_simulated_years)
+  {
+    simulated_years<-paste0(simulated_years,studies$simulated_years[id_years])
+    if(i != studies$n_simulated_years)
+    {
+      script <- paste0(script, "\n")
+    }
+  }
+  write(simulated_years, file = paste0(tmp_folder, "/", in_out_files$simulated_years))
 }
 
 #' Solver master problem
@@ -237,6 +250,48 @@ solve_master <- function(opts = antaresRead::simOptions(), relax_integrality = F
   
   cmd <- paste0('', substr(tmp_folder, 1, 2), ' & cd "', tmp_folder, '" & ampl "', tmp_folder, '/master_run.ampl" ')
 
+  a <- shell(cmd, wait = TRUE, intern = TRUE)
+  #cat(a)
+}
+
+#' Solver master problem
+#' 
+#' \code{solver_master} execute the AMPL file master_run.ampl
+#' located in the temporary folder of the current expansion 
+#' planning optimisation
+#' 
+#' @param opts
+#'   list of simulation parameters returned by the function
+#'   \code{antaresRead::setSimulationPath}
+#' @param relax_integrality
+#'   logical, indicating whether (TRUE) or not (FALSE) the integer variables
+#'   should be relaxed
+#' @return This function does not return anything.
+#' 
+#' @importFrom antaresRead simOptions
+#' @importFrom assertthat assert_that
+#' 
+#solve_master_path <- function(opts = antaresRead::simOptions(), relax_integrality = FALSE)
+solve_master_path <- function(opts, directory_path, relax_integrality = FALSE)
+{#call the function with opts=studies[[1]]$opts
+  tmp_folder <- paste0(directory_path,"/temp")
+  
+  if(relax_integrality)
+  {
+    write("option relax_integrality 1;", file = paste0(tmp_folder, "/in_options.txt"))
+  }
+  else
+  {
+    write("option relax_integrality 0;", file = paste0(tmp_folder, "/in_options.txt"))
+  }
+  
+  
+  assertthat::assert_that(file.exists(paste0(tmp_folder, "/master_path_run.ampl")))
+  assertthat::assert_that(file.exists(paste0(tmp_folder, "/master_path_mod.ampl")))
+  assertthat::assert_that(file.exists(paste0(tmp_folder, "/master_path_dat.ampl")))
+  
+  cmd <- paste0('', substr(tmp_folder, 1, 2), ' & cd "', tmp_folder, '" & ampl "', tmp_folder, '/master_path_run.ampl" ')
+  
   a <- shell(cmd, wait = TRUE, intern = TRUE)
   #cat(a)
 }

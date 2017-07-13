@@ -20,7 +20,7 @@
 #' 
 #' 
 #' 
-investment_path <- function(directory_path,path_solver, display = TRUE, report = TRUE, clean = TRUE, parallel = TRUE){
+investment_path <- function(directory_path, path_solver, display = TRUE, report = TRUE, clean = TRUE, parallel = TRUE){
   
   #reading the studies from the studies.ini file located in the directory_path directory
   studies<-read_studies(paste0(directory_path,"/studies.ini"))
@@ -65,7 +65,7 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
   
   # initiate text files to communicate with master problem CREER NOUVELLE FONCTION INITIATE_MASTER_PATH
   # and copy AMPL file into the temporary file  
-  initiate_master_path(candidates, exp_options, studies$opts[[id_years]],directory_path)
+  initiate_master_path(candidates, studies, exp_options, studies$opts[[id_years]],directory_path)
   #initiate_master(candidates, exp_options, studies$opts[[id_years]])
   
   # initiate a few parameters
@@ -488,83 +488,85 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
         }
         if(current_it$cut_type == "weekly")
         {
-          update_weekly_cuts(current_it, candidates, output_area_w[[id_years]], output_link_w[[id_years]], output_link_h[[id_years]], inv_cost[[id_years]], tmp_folder, exp_options)
+          update_weekly_cuts(current_it, studies, studies$simulated_years[[id_years]], candidates, output_area_w[[id_years]], output_link_w[[id_years]], output_link_h[[id_years]], inv_cost[[id_years]], tmp_folder, exp_options)
         }
       }
     
     
-    # # ---- 6. solve master problem ----
-    # 
-    # # solve master optimisation problem (using AMPL) and read results of
-    # # this problem
-    # 
-    # # if option "integer" has been chosen, should the integrality be added ?
-    # if(exp_options$master == "integer" && current_it$n > 1 && relax_integrality)
-    # {
-    #   if(convergence_relaxed(best_sol = min(x$overall_costs, na.rm = TRUE), best_under_estimator, exp_options))
-    #   {
-    #     relax_integrality <- FALSE
-    #     # reintialize ov.cost and op.costs (which are not admissible because computed with relaxed investments decisions)
-    #     x$operation_costs <- rep(NA, current_it$n)
-    #     x$overall_costs <- rep(NA, current_it$n)
-    #     current_it$need_full <- TRUE
-    # 
-    #     if (display){cat("--- ADDITION of INTEGER variables into investment decisions --- \n")}
-    #   }
-    # }
-    # 
-    # for(id_years in 1:studies$n_simulated_years){
-    # # run AMPL with system command
-    # log <- solve_master(studies$opts[[id_years]], relax_integrality)
-    # }
-    # # load AMPL output
-    # #     - underestimator
-    # x$under_estimator  <-  unname(unlist(read.table(paste0(tmp_folder,"/out_underestimator.txt"), header = FALSE)))
-    # best_under_estimator <-  max(x$under_estimator)
-    # 
-    # #    - investment solution
-    # benders_sol <-  read.table(paste0(tmp_folder,"/out_solutionmaster.txt"), sep =";")[,2]
-    # 
-    # if(display)
-    # {
-    #   cat("--- lower bound on ov.cost = ", best_under_estimator/1000000 ," Me --- best solution (it ", best_solution, ") = ", x$overall_costs[best_solution]/1000000   ,"Me \n")
-    # }
-    # 
-    # 
-    # # ---- 7. Check convergence ----
+    # ---- 6. solve master problem ----
+
+    # solve master optimisation problem (using AMPL) and read results of
+    # this problem
+    for(id_years in 1:studies$n_simulated_years){
+    # if option "integer" has been chosen, should the integrality be added ?
+    if(exp_options$master == "integer" && current_it$n > 1 && relax_integrality)
+    {
+      if(convergence_relaxed(best_sol = min(as.numeric(x$costs$overall[[id_years]]), na.rm = TRUE), best_under_estimator, exp_options))
+      {
+        relax_integrality <- FALSE
+        # reintialize ov.cost and op.costs (which are not admissible because computed with relaxed investments decisions)
+        x$costs$operation[[id_years]] <- rep(NA, current_it$n)
+        x$costs$overall[[id_years]] <- rep(NA, current_it$n)
+        current_it$need_full <- TRUE
+
+        if (display){cat("--- ADDITION of INTEGER variables into investment decisions --- \n")}
+      }
+    }
+    }
+    log<-list()
+    for(id_years in 1:studies$n_simulated_years){
+    # run AMPL with system command
+    log[[id_years]] <- solve_master_path(studies$opts[[id_years]], directory_path, relax_integrality)
+    }
+    # load AMPL output
+    #     - underestimator
+    x$under_estimator  <-  unname(unlist(read.table(paste0(tmp_folder,"/out_underestimator.txt"), header = FALSE)))
+    best_under_estimator <-  max(x$under_estimator)
+
+    #    - investment solution
+    benders_sol <-  read.table(paste0(tmp_folder,"/out_solutionmaster.txt"), sep =";")[,2]
+
+    if(display)
+    {
+      cat("--- lower bound on ov.cost = ", best_under_estimator/1000000 ," Me --- best solution (it ", best_solution, ") = ", x$costs$overall[best_solution]/1000000   ,"Me \n")
+    }
+
+
+    # ---- 7. Check convergence ----
 
     # check convergence of the benders decomposition
 
     # if difference between the under estimator and the best solution
     # is lower than the optimality gap, then the convergence has been reached
-    # if(!all(is.na(x$overall_costs)))
-    # {
-    #   if(convergence(best_sol = min(x$overall_costs, na.rm = TRUE), best_under_estimator, exp_options))
-    #   {
-    #     has_converged <- TRUE
-    #   }
-    # 
-    #   # if master problem solution didn't evolve at this (full) iteration, then the decomposition has
-    #   # converged
-    # 
-    #   if(all(abs(benders_sol - x$invested_capacities[[current_it$id]]) <= 0.1) )
-    #   {
-    #     if(current_it$full)
-    #     {
-    #       has_converged <- TRUE
-    #     }
-    #     else
-    #     {
-    #       current_it$need_full <- TRUE
-    #     }
-    #   }
-    # }
+    for(id_years in 1:studies$n_simulated_years){
+      if(!all(is.na(x$costs$overall[[id_years]])))
+      {
+        if(convergence(best_sol = min(x$costs$overall, na.rm = TRUE), best_under_estimator, exp_options))
+        {
+          has_converged <- TRUE
+        }
 
-    # if option integer has been chosen and integer has not yet been used, convergence cannot be reached
-    # if(exp_options$master == "integer" && relax_integrality)
-    # {
-    #   has_converged <- FALSE
-    # }
+        # if master problem solution didn't evolve at this (full) iteration, then the decomposition has
+        # converged
+
+        if(all(abs(benders_sol - x$invested_capacities[[current_it$id]]) <= 0.1) )
+        {
+          if(current_it$full)
+          {
+            has_converged <- TRUE
+          }
+          else
+          {
+            current_it$need_full <- TRUE
+          }
+        }
+      }
+    }
+    #if option integer has been chosen and integer has not yet been used, convergence cannot be reached
+    if(exp_options$master == "integer" && relax_integrality)
+    {
+      has_converged <- FALSE
+    }
     # 
     # 
     # # display end messages
@@ -600,8 +602,8 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
           for(c in candidates)
           {
             {  
-              #x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],c$name,as.numeric(subset(benders_sol,candidate==c$name)$value)))
-              x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],c$name,as.numeric(runif(n=1,min=0,max=100))))
+              x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],c$name,as.numeric(subset(benders_sol,candidate==c$name)$value)))
+              #x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],c$name,as.numeric(runif(n=1,min=0,max=100))))
             }
           }
         }
@@ -615,9 +617,8 @@ investment_path <- function(directory_path,path_solver, display = TRUE, report =
     
     
     # # ---- 9. Clean ANTARES output ----
-    # if(clean) { clean_output_benders(best_solution, unique_key, opts)}
-    
-    #has_converged<-TRUE   
+    if(clean) { clean_output_benders(best_solution, unique_key, opts)}
+
   }#end of the while loop
 
 
