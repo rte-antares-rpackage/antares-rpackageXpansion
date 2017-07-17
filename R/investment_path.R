@@ -76,7 +76,8 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
   n_mc <- length(mc_years) # number of mc_years
   has_converged <- FALSE # has the benders decomposition converged ? not yet
   best_solution <- NA  # best solution identifier
-  tmp_folder <- paste(studies$opts[[id_years]]$studyPath,"/user/expansion/temp",sep="")   # temporary folder
+  #tmp_folder <- paste(studies$opts[[id_years]]$studyPath,"/user/expansion/temp",sep="")   # temporary folder
+  tmp_folder <- paste0(directory_path,"/temp")
   relax_integrality <- exp_options$master %in% c("relaxed", "integer")
   unique_key <- paste(sample(c(0:9, letters), size = 3, replace = TRUE),collapse = "")
   all_areas <- antaresRead::getAreas(opts = studies$opts[[id_years]])
@@ -468,8 +469,11 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     script <-  ""
     for (c in 1:n_candidates)
     {
-      script <- paste0(script, current_it$id, " ", candidates[[c]]$name, " ", x$invested_capacities[candidates[[c]]$name, current_it$id])
-      if (c != n_candidates) {script <- paste0(script, "\n")}
+     for(id_years in 1:studies$n_simulated_years)
+     {
+      script <- paste0(script, studies$simulated_years[[id_years]] ," ", current_it$id, " ", candidates[[c]]$name, " ", subset(x$invested_capacities,(it==current_it$n & s_years==studies$simulated_years[[id_years]] & candidate==candidates[[c]]$name))$value)
+      if (c != n_candidates | id_years != studies$n_simulated_years) {script <- paste0(script, "\n")}
+     }
     }
     write(script, file = paste0(tmp_folder, "/in_z0.txt"), append = TRUE )  
     
@@ -501,23 +505,23 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     # if option "integer" has been chosen, should the integrality be added ?
     if(exp_options$master == "integer" && current_it$n > 1 && relax_integrality)
     {
-      if(convergence_relaxed(best_sol = min(as.numeric(x$costs$overall[[id_years]]), na.rm = TRUE), best_under_estimator, exp_options))
-      {
-        relax_integrality <- FALSE
-        # reintialize ov.cost and op.costs (which are not admissible because computed with relaxed investments decisions)
-        x$costs$operation[[id_years]] <- rep(NA, current_it$n)
-        x$costs$overall[[id_years]] <- rep(NA, current_it$n)
-        current_it$need_full <- TRUE
+        if(convergence_relaxed(best_sol = min(as.numeric(x$costs$overall[[id_years]]), na.rm = TRUE), best_under_estimator, exp_options))
+        {
+          relax_integrality <- FALSE
+          # reintialize ov.cost and op.costs (which are not admissible because computed with relaxed investments decisions)
+          x$costs$operation[[id_years]] <- rep(NA, current_it$n)
+          x$costs$overall[[id_years]] <- rep(NA, current_it$n)
+          current_it$need_full <- TRUE
 
-        if (display){cat("--- ADDITION of INTEGER variables into investment decisions --- \n")}
+          if (display){cat("--- ADDITION of INTEGER variables into investment decisions --- \n")}
+        }
       }
-    }
     }
     log<-list()
     for(id_years in 1:studies$n_simulated_years){
     # run AMPL with system command
     log[[id_years]] <- solve_master_path(studies$opts[[id_years]], directory_path, relax_integrality)
-    }
+    
     # load AMPL output
     #     - underestimator
     x$under_estimator  <-  unname(unlist(read.table(paste0(tmp_folder,"/out_underestimator.txt"), header = FALSE)))
@@ -528,10 +532,10 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
 
     if(display)
     {
-      cat("--- lower bound on ov.cost = ", best_under_estimator/1000000 ," Me --- best solution (it ", best_solution, ") = ", x$costs$overall[best_solution]/1000000   ,"Me \n")
+      cat("--- lower bound on ov.cost = ", best_under_estimator/1000000 ," Me --- best solution (it ", best_solution, ") = ", x$costs$overall[[best_solution]]/1000000   ,"Me \n")
     }
 
-
+    }
     # ---- 7. Check convergence ----
 
     # check convergence of the benders decomposition
@@ -541,7 +545,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     for(id_years in 1:studies$n_simulated_years){
       if(!all(is.na(x$costs$overall[[id_years]])))
       {
-        if(convergence(best_sol = min(x$costs$overall, na.rm = TRUE), best_under_estimator, exp_options))
+        if(convergence(best_sol = min(x$costs$overall[[id_years]], na.rm = TRUE), best_under_estimator, exp_options))
         {
           has_converged <- TRUE
         }

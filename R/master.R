@@ -205,9 +205,9 @@ initiate_master_path <- function(candidates, studies, exp_options = read_options
   for(id_years in 1:studies$n_simulated_years)
   {
     simulated_years<-paste0(simulated_years,studies$simulated_years[id_years])
-    if(i != studies$n_simulated_years)
+    if(id_years != studies$n_simulated_years)
     {
-      script <- paste0(script, "\n")
+      simulated_years <- paste0(simulated_years, " ")
     }
   }
   write(simulated_years, file = paste0(tmp_folder, "/", in_out_files$simulated_years))
@@ -272,6 +272,8 @@ solve_master <- function(opts = antaresRead::simOptions(), relax_integrality = F
 #' @importFrom assertthat assert_that
 #' 
 #solve_master_path <- function(opts = antaresRead::simOptions(), relax_integrality = FALSE)
+
+
 solve_master_path <- function(opts, directory_path, relax_integrality = FALSE)
 {#call the function with opts=studies[[1]]$opts
   tmp_folder <- paste0(directory_path,"/temp")
