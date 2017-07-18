@@ -521,21 +521,45 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     for(id_years in 1:studies$n_simulated_years){
     # run AMPL with system command
     log[[id_years]] <- solve_master_path(studies$opts[[id_years]], directory_path, relax_integrality)
-    
+    }
     # load AMPL output
     #     - underestimator
     x$under_estimator  <-  unname(unlist(read.table(paste0(tmp_folder,"/out_underestimator.txt"), header = FALSE)))
     best_under_estimator <-  max(x$under_estimator)
 
     #    - investment solution
-    benders_sol <-  read.table(paste0(tmp_folder,"/out_solutionmaster.txt"), sep =";")[,2]
-
+    benders_sol_table <-  read.table(paste0(tmp_folder,"/out_solutionmaster.txt"), sep =";")[,2]
+    
+    benders_sol_list<-list()
+    #there must be some better way to write it
+    for(id_years in 1:studies$n_simulated_years){
+      benders_sol_list[[id_years]]<-benders_sol_table[((n_candidates)*(id_years-1)+1):(id_years*n_candidates)]
+    }
+    tmp_vec<-c()
+    for(c in candidates){
+      tmp_vec<-append(tmp_vec,c$name)
+    }
+    
+    benders_sol<-data.frame(benders_sol_list,row.names = tmp_vec)
+    
+    # tmp_s_years<-c()
+    # for(id_years in 1:studies$n_simulated_years){
+    #   tmp_s_years<-append(tmp_s_years,studies$simulated_years[[id_years]])
+    # }
+    # 
+    # benders_sol<-data.frame(benders_sol_list[1])
+    # for(id_years in 2:studies$n_simulated_years){
+    #   benders_sol$tmp_s_years[[id_years]]<-benders_sol_list[id_years]
+    # }
+    # row.names(benders_sol)<-tmp_vec
+    # 
+    
     if(display)
     {
       cat("--- lower bound on ov.cost = ", best_under_estimator/1000000 ," Me --- best solution (it ", best_solution, ") = ", x$costs$overall[[best_solution]]/1000000   ,"Me \n")
     }
 
-    }
+    
     # ---- 7. Check convergence ----
 
     # check convergence of the benders decomposition
@@ -552,8 +576,15 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
 
         # if master problem solution didn't evolve at this (full) iteration, then the decomposition has
         # converged
-
-        if(all(abs(benders_sol - x$invested_capacities[[current_it$id]]) <= 0.1) )
+        tmp_vec<-c()
+          for(c in candidates)
+            {
+              tmp_vec<-append(tmp_vec,as.numeric(subset(x$invested_capacities,it==current_it$n & s_years==studies$simulated_years[[id_years]] & candidate==c$name)$value))
+            }
+        
+        
+        if(all(abs((benders_sol[[id_years]] - tmp_vec)) <= 0.1 ) )
+          
         {
           if(current_it$full)
           {
@@ -606,7 +637,8 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
           for(c in candidates)
           {
             {  
-              x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],c$name,as.numeric(subset(benders_sol,candidate==c$name)$value)))
+              #x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],c$name,as.numeric(subset(benders_sol,candidate==c$name)$value)))
+              x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],c$name,benders_sol[[c$name,id_years]]))
               #x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],c$name,as.numeric(runif(n=1,min=0,max=100))))
             }
           }
@@ -621,8 +653,10 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     
     
     # # ---- 9. Clean ANTARES output ----
-    if(clean) { clean_output_benders(best_solution, unique_key, opts)}
-
+    
+    for(id_years in 1:studies$n_simulated_years){
+      if(clean) { clean_output_benders(best_solution, unique_key, studies$opts[[id_years]])}
+    }
   }#end of the while loop
 
 

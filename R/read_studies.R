@@ -32,7 +32,7 @@ read_studies <- function(studies_file_name)
   
   #read file
   #param_data <- scan(studies_file_name, what=character(), sep="", quiet = TRUE)
-  param_data <- readLines(basename(studies_file_name))
+  param_data <- readLines(basename(studies_file_name),warn=FALSE)
   
   # go through every line of the file from the first non-empty line (identified by id_year) to the end
   for(line in 1:length(param_data))

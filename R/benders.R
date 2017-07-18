@@ -38,12 +38,14 @@ benders <- function(path_solver, display = TRUE, report = TRUE, clean = TRUE, pa
   assertthat::assert_that(file.copy(from = paste0(opts$studyPath, "/settings/generaldata.ini"), 
             to = paste0(opts$studyPath, "/settings/generaldata_tmpsvg.ini"),
             overwrite = TRUE))
-  
+
   # read expansion planning options
-  exp_options <- read_options(opts)
+  option_file_name <- paste0(opts$studyPath,"/user/expansion/settings.ini")
+  exp_options <- read_options(option_file_name)
   
   # read investment candidates file
-  candidates <- read_candidates(opts)
+  candidates_file_name <- paste0(opts$studyPath,"/user/expansion/candidates.ini")
+  candidates <- read_candidates(candidates_file_name,opts)
   n_candidates <- length(candidates)
   assertthat::assert_that(n_candidates > 0)
   
@@ -477,9 +479,10 @@ benders <- function(path_solver, display = TRUE, report = TRUE, clean = TRUE, pa
   
   
   # add information in the output file
-  x$expansion_options <- read_options(opts)
+  option_file_name_2 <- paste0(opts$studyPath,"/user/expansion/settings.ini")
+  x$expansion_options <- read_options(option_file_name_2)
   x$study_options <- opts
-  x$candidates <- read_candidates(opts)
+  x$candidates <- read_candidates(candidates_file_name,opts)
   
   # reset options of the ANTARES study to their initial values
   assertthat::assert_that(file.remove(paste0(opts$studyPath, "/settings/generaldata.ini")))
