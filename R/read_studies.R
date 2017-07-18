@@ -66,5 +66,3 @@ read_studies <- function(studies_file_name)
   }
   return(studies)
 }
-
-#TEST<-read_studies("D:/testdavid.ini")

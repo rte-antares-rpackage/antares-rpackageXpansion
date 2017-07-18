@@ -200,12 +200,12 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     # boucle sur opts avec chgt de invested_capacites
     
     for(id_years in 1:studies$n_simulated_years)
-      {
+    {
       for(c in candidates)
         {
           #id_candidate_year <- paste(c$name,"_",current_it$n,sep="")
-          update_link(c$link, "direct_capacity", c$link_profile*as.numeric(subset(x$invested_capacities,it==current_it$n & s_years==studies$simulated_years[[id_years]] & candidate==c$name)$value), studies$opts[id_years])
-          update_link(c$link, "indirect_capacity", c$link_profile*as.numeric(subset(x$invested_capacities,it==current_it$n & s_years==studies$simulated_years[[id_years]] & candidate==c$name)$value), studies$opts[id_years])
+          update_link(c$link, "direct_capacity", c$link_profile*as.numeric(subset(x$invested_capacities,it==current_it$n & s_years==studies$simulated_years[[id_years]] & candidate==c$name)$value), studies$opts[[id_years]])
+          update_link(c$link, "indirect_capacity", c$link_profile*as.numeric(subset(x$invested_capacities,it==current_it$n & s_years==studies$simulated_years[[id_years]] & candidate==c$name)$value), studies$opts[[id_years]])
         }
     }
     
@@ -659,49 +659,66 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     }
   }#end of the while loop
 
+  #-------------
+  
+  
+  #yet to be modified#
+  # add information in the output file
+  for(id_years in 1:studies$n_simulated_years){
+  option_file_name_2 <- paste0(studies$opts[[id_years]]$studyPath,"/user/expansion/settings.ini")
+  x$expansion_options <- read_options(option_file_name_2)
+  x$study_options <- studies$opts[[id_years]]
+  x$candidates <- read_candidates(candidates_file_name,studies$opts[[id_years]])
+
+  # reset options of the ANTARES study to their initial values
+  
+  #check if any studies are the same
+  different_studies<-FALSE
+  tmp_vec<-c()
+  for(id_years in 1:studies$n_simulated_years){
+    tmp_vec<-append(tmp_vec,studies$opts[[id_years]]$studyPath)
+  }
+  different_studies<-(anyDuplicated(tmp_vec)==0)
+  
+  
+  #car pour mon test
+  if(different_studies){
+  assertthat::assert_that(file.remove(paste0(studies$opts[[id_years]]$studyPath, "/settings/generaldata.ini")))
+  assertthat::assert_that(file.rename(from = paste0(studies$opts[[id_years]]$studyPath, "/settings/generaldata_tmpsvg.ini"),
+                                      to = paste0(studies$opts[[id_years]]$studyPath, "/settings/generaldata.ini")))
+  }
+
+  # set link capacities to their optimal value
+  for(c in candidates)
+  {
+    update_link(c$link, "direct_capacity", as.numeric(subset(x$invested_capacities,candidate==c$name & it == best_solution & s_years==studies$simulated_years[[id_years]])$value), studies$opts[[id_years]])
+    update_link(c$link, "indirect_capacity", as.numeric(subset(x$invested_capacities,candidate==c$name & it == best_solution & s_years==studies$simulated_years[[id_years]])$value), studies$opts[[id_years]])
+    #update_link(c$link, "indirect_capacity", x$invested_capacities[c$name, paste0("it", best_solution)], studies$opts[[id_years]])
+    }
 
 
-  # # add information in the output file
-  # option_file_name_2 <- paste0(opts$studyPath,"/user/expansion/settings.ini")
-  # x$expansion_options <- read_options(option_file_name_2)
-  # x$study_options <- opts
-  # x$candidates <- read_candidates(candidates_file_name,opts)
-  # 
-  # # reset options of the ANTARES study to their initial values
-  # assertthat::assert_that(file.remove(paste0(opts$studyPath, "/settings/generaldata.ini")))
-  # assertthat::assert_that(file.rename(from = paste0(opts$studyPath, "/settings/generaldata_tmpsvg.ini"),
-  #                                     to = paste0(opts$studyPath, "/settings/generaldata.ini")))
-  # 
-  # 
-  # # set link capacities to their optimal value
-  # for(c in candidates)
-  # {
-  #   update_link(c$link, "direct_capacity", x$invested_capacities[c$name, paste0("it", best_solution)] , opts)
-  #   update_link(c$link, "indirect_capacity", x$invested_capacities[c$name, paste0("it", best_solution)], opts)
-  # }
-  # 
-  # 
-  # # save output file
-  # # copy the benders_out into a Rdata in the temporary folder
-  # tmp_folder <- paste(opts$studyPath,"/user/expansion/temp",sep="")
-  # if(!dir.exists(tmp_folder))
-  # {
-  #   dir.create(tmp_folder)
-  # }
-  # 
-  # saveRDS(x, file = paste0(tmp_folder, "/data_for_report.RDS"))
-  # 
-  # # create report
-  # if(report)
-  # {
-  #   if(display)
-  #   {
-  #     cat("Write report in user/expansion/report directory \n")
-  #   }
-  # 
-  #   rmarkdown::render(input = system.file("rmd/report.Rmd", package = "antaresXpansion"),
-  #                     output_file = default_report_file(opts), params = x, quiet = TRUE)
-  # }
+  # save output file
+  # copy the benders_out into a Rdata in the temporary folder
+  tmp_folder <- paste(studies$opts[[id_years]]$studyPath,"/user/expansion/temp",sep="")
+  if(!dir.exists(tmp_folder))
+  {
+    dir.create(tmp_folder)
+  }
+
+  saveRDS(x, file = paste0(tmp_folder, "/data_for_report.RDS"))
+  }
+  # create report
+  if(report)
+  {
+    if(display)
+    {
+      cat("Write report in user/expansion/report directory \n")
+    }
+  for(id_years in 1:studies$n_simulated){
+    rmarkdown::render(input = system.file("rmd/report.Rmd", package = "antaresXpansion"),
+                      output_file = default_report_file(studies$opts[[id_years]]), params = x, quiet = TRUE)
+      }
+  }
   #---------------------------------------------------------------------------------------------------------------
   return(x)
 }
