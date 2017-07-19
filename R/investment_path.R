@@ -661,6 +661,14 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
 
   #-------------
   
+  #check if any studies are the same
+  different_studies<-FALSE
+  tmp_vec<-c()
+  for(id_years in 1:studies$n_simulated_years){
+    tmp_vec<-append(tmp_vec,studies$opts[[id_years]]$studyPath)
+  }
+  different_studies<-(anyDuplicated(tmp_vec)==0)
+  
   
   #yet to be modified#
   # add information in the output file
@@ -671,15 +679,6 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
   x$candidates <- read_candidates(candidates_file_name,studies$opts[[id_years]])
 
   # reset options of the ANTARES study to their initial values
-  
-  #check if any studies are the same
-  different_studies<-FALSE
-  tmp_vec<-c()
-  for(id_years in 1:studies$n_simulated_years){
-    tmp_vec<-append(tmp_vec,studies$opts[[id_years]]$studyPath)
-  }
-  different_studies<-(anyDuplicated(tmp_vec)==0)
-  
   
   #car pour mon test
   if(different_studies){
@@ -695,8 +694,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     update_link(c$link, "indirect_capacity", as.numeric(subset(x$invested_capacities,candidate==c$name & it == best_solution & s_years==studies$simulated_years[[id_years]])$value), studies$opts[[id_years]])
     #update_link(c$link, "indirect_capacity", x$invested_capacities[c$name, paste0("it", best_solution)], studies$opts[[id_years]])
     }
-
-
+  
   # save output file
   # copy the benders_out into a Rdata in the temporary folder
   tmp_folder <- paste(studies$opts[[id_years]]$studyPath,"/user/expansion/temp",sep="")
@@ -712,13 +710,14 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
   {
     if(display)
     {
-      cat("Write report in user/expansion/report directory \n")
+      cat("Write report in report directory \n")
     }
-  for(id_years in 1:studies$n_simulated){
+
     rmarkdown::render(input = system.file("rmd/report.Rmd", package = "antaresXpansion"),
-                      output_file = default_report_file(studies$opts[[id_years]]), params = x, quiet = TRUE)
-      }
+                      output_file = default_report_file(directory_path), params = x, quiet = TRUE)
+      
   }
   #---------------------------------------------------------------------------------------------------------------
   return(x)
 }
+

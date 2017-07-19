@@ -8,7 +8,7 @@
 #'   will use the results of the last launched benders decomposition
 #' @param file
 #'   File name of the report. By default the report will be stored in the
-#'   directory user/expansion/report of the current ANTARES study
+#'   directory_path of the current ANTARES study
 #' @param opts
 #'   list of simulation parameters returned by the function
 #'   \code{antaresRead::setSimulationPath}
@@ -54,15 +54,15 @@ report <- function(benders_out = "last", file = default_report_file(opts), opts 
 #' @importFrom antaresRead simOptions
 #' @importFrom lubridate now
 #'                                       
-default_report_file <- function(opts = antaresRead::simOptions())
+default_report_file <- function(directory_path)
 {
   # check that report folder exists, if not create it
-  report_folder <- paste(opts$studyPath,"/user/expansion/report",sep="")
+  report_folder <- paste(directory_path,"/report",sep="")
   if(!dir.exists(report_folder))
   {
     dir.create(report_folder)
   }
   
   # return default file name
-  paste0(simOptions()$studyPath, "/user/expansion/report/" , as.character.Date(lubridate::now(), format = "%Y%m%d-%H%M") ,"_report.html") 
+  paste0(directory_path, "/report/" , as.character.Date(lubridate::now(), format = "%Y%m%d-%H%M") ,"_report.html") 
 }
