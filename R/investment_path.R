@@ -164,7 +164,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     tmp_vec <- append(tmp_vec,sapply(candidates, FUN = function(c){paste(c$name,"_",current_it$n,"_",studies$simulated_years[id_years],sep="")}))
   }
   row.names(x$invested_capacities) <- tmp_vec
-  
+
   
   #----------------------------------------------------------------------------------------------------------------
   # ----
@@ -318,28 +318,37 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
         x$costs$it<- rep(current_it$n,studies$n_simulated_years)
         
         #column s_years of the data frame x$ investment_cost
-        tmp_vec<-c()
-        for(id_years in 1:studies$n_simulated_years)
-        {
-          tmp_vec<-append(tmp_vec,studies$simulated_years[id_years])
-        }
-        x$costs$s_years<-tmp_vec
-        
+        # tmp_vec<-c()
+        # for(id_years in 1:studies$n_simulated_years)
+        # {
+        #   tmp_vec<-append(tmp_vec,studies$simulated_years[id_years])
+        # }
+        # x$costs$s_years<-tmp_vec
+        # 
+        x$costs$s_years<-c()
+        x$costs$s_years<-sapply(1:studies$n_simulated_years, FUN=function(id_years){append(x$costs$s_years,studies$simulated_years[id_years])})
         
         #column value of the data frame x$costs$investment $operation $overall
-        tmp_vec_investment<-c()
-        tmp_vec_operation<-c()
-        tmp_vec_overall<-c()
-        for(id_years in 1:studies$n_simulated_years)
-        {
-          tmp_vec_investment<-append(tmp_vec_investment,inv_cost[id_years])
-          tmp_vec_operation<-append(tmp_vec_operation,op_cost[id_years])
-          tmp_vec_overall<-append(tmp_vec_overall,ov_cost[id_years])
+        #tmp_vec_investment<-c()
+        # tmp_vec_operation<-c()
+        # tmp_vec_overall<-c()
+        # for(id_years in 1:studies$n_simulated_years)
+        # {
+          #tmp_vec_investment<-append(tmp_vec_investment,inv_cost[id_years])
+        #   tmp_vec_operation<-append(tmp_vec_operation,op_cost[id_years])
+        #   tmp_vec_overall<-append(tmp_vec_overall,ov_cost[id_years])
+        # }
+        #x$costs$investment<-tmp_vec_investment
+        # x$costs$operation<-tmp_vec_operation
+        # x$costs$overall<-tmp_vec_overall
+        
+        x$costs$operation<-c()
+        x$costs$investment<-c()
+        x$costs$overall<-c()
+        x$costs$operation<-sapply(1:studies$n_simulated_years, FUN=function(id_years){append(x$costs$operation,op_cost[id_years])})
+        x$costs$investment<-sapply(1:studies$n_simulated_years, FUN=function(id_years){append(x$costs$investment,inv_cost[id_years])})
+        x$costs$overall<-sapply(1:studies$n_simulated_years, FUN=function(id_years){append(x$costs$overall,ov_cost[id_years])})
         }
-        x$costs$investment<-tmp_vec_investment
-        x$costs$operation<-tmp_vec_operation
-        x$costs$overall<-tmp_vec_overall
-      }
       else{#not the first iteration, the data frame is completed
         assertthat::assert_that(current_it$n>1)
         for(id_years in 1:studies$n_simulated_years)
@@ -416,11 +425,11 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
       x$digest$area<-getAreas(opts=studies$opts[[1]])#AREAS ARE THE SAME EVERY YEAR CONSIDERED
       tmp_vec <- c()
       for(id_years in 1:studies$n_simulated_years)
-      {  
+      {
         tmp_vec<-c(tmp_vec,lole[[id_years]])
       }
       x$digest$lole<-tmp_vec
-      
+
       #row.names(x$digest$lole) <- all_areas
     }
     #current$it>1
@@ -522,6 +531,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     # run AMPL with system command
     log[[id_years]] <- solve_master_path(studies$opts[[id_years]], directory_path, relax_integrality)
     }
+    #log<- sapply(1:studies$n_simulated_years,FUN=function(id_years){append(log,=solve_master_path(studies$opts[[id_years]], directory_path, relax_integrality))})
     # load AMPL output
     #     - underestimator
     x$under_estimator  <-  unname(unlist(read.table(paste0(tmp_folder,"/out_underestimator.txt"), header = FALSE)))
@@ -536,9 +546,10 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
       benders_sol_list[[id_years]]<-benders_sol_table[((n_candidates)*(id_years-1)+1):(id_years*n_candidates)]
     }
     tmp_vec<-c()
-    for(c in candidates){
-      tmp_vec<-append(tmp_vec,c$name)
-    }
+    # for(c in candidates){
+    #   tmp_vec<-append(tmp_vec,c$name)
+    # }
+    tmp_vec<-sapply(candidates,FUN = function(c){append(tmp_vec,c$name)})
     
     benders_sol<-data.frame(benders_sol_list,row.names = tmp_vec)
     
@@ -554,11 +565,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     # row.names(benders_sol)<-tmp_vec
     # 
     
-    if(display)
-    {
-      cat("--- lower bound on ov.cost = ", best_under_estimator/1000000 ," Me --- best solution (it ", best_solution, ") = ", x$costs$overall[[best_solution]]/1000000   ,"Me \n")
-    }
-
+    
     
     # ---- 7. Check convergence ----
 
@@ -604,16 +611,16 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     }
     # 
     # 
-    # # display end messages
-    # if(has_converged & display)
-    # {
-    #   cat("--- CONVERGENCE within optimality gap: best solution = it ", best_solution, " --- ov.cost = ", min(x$overall_costs, na.rm = TRUE)/1000000 ," Me --- Best Lower Bound = ",best_under_estimator/1000000 , " Me \n")
-    # }
-    # if(display & current_it$n >= exp_options$max_iteration)
-    # {
-    #   cat("--- END, the maximum number of iteration (", exp_options$max_iteration, ") has been reached \n", sep ="")
-    # }
-    # 
+    # display end messages
+    if(has_converged & display)
+    {
+      cat("--- CONVERGENCE within optimality gap: best solution = iteration ", best_solution, " --- ov.cost = ", as.numeric(subset(x$costs,it==best_solution & s_years==studies$simulated_years[[id_years]])$overall)/1000000 ," Me --- Best Lower Bound = ",best_under_estimator/1000000 , " Me \n")
+    }
+    if(display & current_it$n >= exp_options$max_iteration)
+    {
+      cat("--- END, the maximum number of iteration (", exp_options$max_iteration, ") has been reached \n", sep ="")
+    }
+
     # go to next iteration
     x$iterations[[current_it$n]] <- current_it
     current_it$n = current_it$n +1
@@ -659,6 +666,19 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     }
   }#end of the while loop
 
+  if(display)
+  {
+    cat("--- lower bound on ov.cost = ", best_under_estimator/1000000 ," Me --- \n")
+    cat("--- best solution was found iteration ", best_solution," \n")
+    #information on the best iteration and the associated cost of the condidered years to be displayed at the end
+    cat("--- information on the best iteration and the associated cost of the condidered years  :\n")
+    for(id_years in 1:studies$n_simulated_years){
+      cat("    . year ",studies$simulated_years[[id_years]], " : ", as.numeric(subset(x$costs,it==best_solution & s_years==studies$simulated_years[[id_years]])$overall)/1000000   ," Me \n")
+    }
+    cat("--- the overall cost (sum) over the considered years is : ",sum(unlist(subset(x$costs,it==best_solution)$overall))," euros \n")
+  }
+  
+  
   #-------------
   
   #check if any studies are the same
