@@ -367,7 +367,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
         if(current_it$full)
         {
           # check if the current iteration provides the best solution
-          if(ov_cost[[id_years]] <= min(as.numeric(subset(x$costs,it==current_it$n,s_years==studies$simulated_years[[id_years]])$overall), na.rm = TRUE)) {best_solution = current_it$n}
+          if(ov_cost[[id_years]] <= min(as.numeric(subset(x$costs,it==current_it$n & s_years==studies$simulated_years[[id_years]])$overall), na.rm = TRUE)) {best_solution = current_it$n}
         }
     }
     # compute average rentability of each candidate (can only
@@ -577,10 +577,10 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
 
     # if difference between the under estimator and the best solution
     # is lower than the optimality gap, then the convergence has been reached
-    for(id_years in 1:studies$n_simulated_years){
+    #for(id_years in 1:studies$n_simulated_years){
       if(!all(is.na(x$costs$overall[[id_years]])))
       {
-        if(convergence(best_sol = min(x$costs$overall[[id_years]], na.rm = TRUE), best_under_estimator, exp_options))
+        if(convergence(best_sol = min(sum(as.numeric(subset(x$costs,it==current_it$n)$overall)), na.rm = TRUE), best_under_estimator, exp_options))
         {
           has_converged <- TRUE
         }
@@ -607,7 +607,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
           }
         }
       }
-    }
+    #}
     #if option integer has been chosen and integer has not yet been used, convergence cannot be reached
     if(exp_options$master == "integer" && relax_integrality)
     {
