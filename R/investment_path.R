@@ -737,8 +737,8 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
       cat("Write report in report directory \n")
     }
 
-    rmarkdown::render(input = system.file("rmd/report.Rmd", package = "antaresXpansion"),
-                      output_file = default_report_file(directory_path), params = x, quiet = TRUE)
+    rmarkdown::render(input = system.file("rmd/report_path.Rmd", package = "antaresXpansion"),
+                      output_file = default_report_file_path(directory_path), params = x, quiet = TRUE)
       
   }
   #---------------------------------------------------------------------------------------------------------------
