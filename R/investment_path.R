@@ -159,11 +159,6 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
   
   #name rows
   #row.names(x$invested_capacities) <- sapply(candidates, FUN = function(c){paste(c$name,"_",1,sep="")})
-  tmp_vec <- c()
-  for(id_years in 1:studies$n_simulated_years){
-    tmp_vec <- append(tmp_vec,sapply(candidates, FUN = function(c){paste(c$name,"_",current_it$n,"_",studies$simulated_years[id_years],sep="")}))
-  }
-  row.names(x$invested_capacities) <- tmp_vec
 
   
   #----------------------------------------------------------------------------------------------------------------
@@ -176,6 +171,14 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     # not much to do here
     
     current_it$id <- paste0("it", current_it$n)
+    
+    #Uncomment below if you want to name the rows of the invested capacities data.frame
+    # tmp_vec <- c()
+    # for(id_years in 1:studies$n_simulated_years){
+    #   tmp_vec <- append(tmp_vec,sapply(candidates, FUN = function(c){paste(c$name,"_",current_it$n,"_",studies$simulated_years[id_years],sep="")}))
+    # }
+    # row.names(x$invested_capacities) <- tmp_vec
+    
     
     # ---- 1. Select weeks to simulate at this iteration ----
     
@@ -501,7 +504,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
         }
         if(current_it$cut_type == "weekly")
         {
-          update_weekly_cuts(current_it, studies, studies$simulated_years[[id_years]], candidates, output_area_w[[id_years]], output_link_w[[id_years]], output_link_h[[id_years]], inv_cost[[id_years]], tmp_folder, exp_options)
+          update_weekly_cuts_path(current_it, studies$simulated_years[[id_years]], candidates, output_area_w[[id_years]], output_link_w[[id_years]], output_link_h[[id_years]], inv_cost[[id_years]], tmp_folder, exp_options)
         }
       }
     
@@ -534,8 +537,9 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     #log<- sapply(1:studies$n_simulated_years,FUN=function(id_years){append(log,=solve_master_path(studies$opts[[id_years]], directory_path, relax_integrality))})
     # load AMPL output
     #     - underestimator
-    x$under_estimator  <-  unname(unlist(read.table(paste0(tmp_folder,"/out_underestimator.txt"), header = FALSE)))
-    best_under_estimator <-  max(x$under_estimator)
+    x$under_estimator<-list()
+    x$under_estimator[[current_it$n]]  <-  unname(unlist(read.table(paste0(tmp_folder,"/out_underestimator.txt"), header = FALSE)))
+    best_under_estimator <-  max(unlist(x$under_estimator))
 
     #    - investment solution
     benders_sol_table <-  read.table(paste0(tmp_folder,"/out_solutionmaster.txt"), sep =";")[,2]
@@ -645,7 +649,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
           {
             {  
               #x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],c$name,as.numeric(subset(benders_sol,candidate==c$name)$value)))
-              x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],c$name,benders_sol[[c$name,id_years]]))
+              x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[[id_years]],c$name,benders_sol[[c$name,id_years]]))
               #x$invested_capacities<-rbind(x$invested_capacities,c(current_it$n,studies$simulated_years[id_years],c$name,as.numeric(runif(n=1,min=0,max=100))))
             }
           }

@@ -235,7 +235,7 @@ update_yearly_cuts <- function(current_it,candidates, output_area_y,output_link_
 #' @return nothing
 #' 
 #' 
-update_weekly_cuts <- function(current_it,studies, simulated_year, candidates, output_area_w, output_link_w, output_link_h, inv_cost, tmp_folder, benders_options)
+update_weekly_cuts <- function(current_it, candidates, output_area_w, output_link_w, output_link_h, inv_cost, tmp_folder, benders_options)
 {
   
   # compute a few intermediate variables
@@ -270,7 +270,7 @@ update_weekly_cuts <- function(current_it,studies, simulated_year, candidates, o
             inv_cost/52
       }
       
-      script_cost <- paste0(script_cost, simulated_year, " ", current_it$id, " ", y , " ", w, " ", w_cost)
+      script_cost <- paste0(script_cost, " ", current_it$id, " ", y , " ", w, " ", w_cost)
       
       
       
@@ -292,7 +292,7 @@ update_weekly_cuts <- function(current_it,studies, simulated_year, candidates, o
           #tmp_rentability <- sum(as.numeric(subset(output_link_w, link == candidates[[c]]$link & mcYear == y & timeId == w)$"MARG. COST")) - candidates[[c]]$cost /52
           tmp_rentability <- sum(as.numeric(subset(output_link_w, link == candidates[[c]]$link & mcYear == y & timeId == w)$"MARG. COST"))
         }
-        script_rentability <- paste0(script_rentability, simulated_year, " ", current_it$id, " ", y , " ", w , " ", candidates[[c]]$name, " ", tmp_rentability)
+        script_rentability <- paste0(script_rentability, " ", current_it$id, " ", y , " ", w , " ", candidates[[c]]$name, " ", tmp_rentability)
         
         if (c != n_candidates || y != last_y || w != last_w)
         {
@@ -392,4 +392,101 @@ convergence <-  function(best_sol, best_under, benders_options)
 
   # is convergence of the relaxed problem reached ?
   return((best_sol - best_under) <= opt_gap)
+}
+
+#' Update costs and rentability files of the weekly cuts
+#' Create files in_weeklyrentability.txt and in_weeklycuts.txt which
+#' will be later read by AMPL as input of the master problem
+#' 
+#' 
+#' @param current_it
+#' list of current iteration characteristics
+#' @param candidates
+#'   list of investment candidates, as returned by
+#'   \code{\link{read_candidates}}
+#' @param output_area_w
+#'   antaresDataList of all the areas of the study with a weekly time step
+#' @param output_link_w
+#'   antaresDataList of all the links of the study with a weekly time step
+#' @param output_link_h
+#'   antaresDataList of all the links of the study with a weekly time step
+#' @param inv_cost
+#'   investments costs of this iteration
+#' @param tmp_folder
+#'   temporary folder in which to write the files
+#' @param benders_options
+#'   list of benders decomposition options, as returned by
+#'   \code{\link{read_options}}.
+#'   
+#' @return nothing
+#' 
+#' 
+update_weekly_cuts_path <- function(current_it, simulated_year, candidates, output_area_w, output_link_w, output_link_h, inv_cost, tmp_folder, benders_options)
+{
+  
+  # compute a few intermediate variables
+  n_candidates <- length(candidates)
+  last_w <- current_it$weeks[length(current_it$weeks)]
+  last_y <- current_it$mc_years[length(current_it$mc_years)]
+  
+  # initiate scripts
+  script_rentability  <-  ""
+  script_cost <- ""
+  
+  # for every mc years and every week
+  for(y in current_it$mc_years)
+  {
+    for(w in current_it$weeks)
+      
+    {
+      
+      if(benders_options$uc_type == "relaxed_fast")
+      {
+        # in that case, non-linear cost has to be removed because they are computed in a post-processing and are not
+        # part of the ANTARES optimization  
+        w_cost <- sum(as.numeric(subset(output_area_w, mcYear == y & timeId == w)$"OV. COST")) +
+          sum(as.numeric(subset(output_link_w, mcYear == y & timeId == w)$"HURDLE COST")) -
+          sum(as.numeric(subset(output_area_w, mcYear == y & timeId == w)$"NP COST")) +
+          inv_cost/52
+      }
+      else
+      {
+        w_cost <- sum(as.numeric(subset(output_area_w, mcYear == y & timeId == w)$"OV. COST")) +
+          sum(as.numeric(subset(output_link_w, mcYear == y & timeId == w)$"HURDLE COST")) +
+          inv_cost/52
+      }
+      
+      script_cost <- paste0(script_cost, simulated_year, " ", current_it$id, " ", y , " ", w, " ", w_cost)
+      
+      
+      
+      
+      if (y != last_y || w != last_w) {script_cost <- paste0(script_cost, "\n")}
+      
+      
+      for(c in 1:n_candidates)
+      {
+        if(candidates[[c]]$has_link_profile)
+        {
+          first_h <- 7*24*(w-1)+1
+          last_h <- 7*24*w
+          #tmp_rentability <- sum(as.numeric(subset(output_link_h, link == candidates[[c]]$link & mcYear == y & timeId >= first_h & timeId <= last_h)$"MARG. COST")* candidates[[c]]$link_profile[first_h:last_h,1]) - candidates[[c]]$cost /52
+          tmp_rentability <- sum(as.numeric(subset(output_link_h, link == candidates[[c]]$link & mcYear == y & timeId >= first_h & timeId <= last_h)$"MARG. COST")* candidates[[c]]$link_profile[first_h:last_h,1])
+        }
+        else
+        {
+          #tmp_rentability <- sum(as.numeric(subset(output_link_w, link == candidates[[c]]$link & mcYear == y & timeId == w)$"MARG. COST")) - candidates[[c]]$cost /52
+          tmp_rentability <- sum(as.numeric(subset(output_link_w, link == candidates[[c]]$link & mcYear == y & timeId == w)$"MARG. COST"))
+        }
+        script_rentability <- paste0(script_rentability, simulated_year, " ", current_it$id, " ", y , " ", w , " ", candidates[[c]]$name, " ", tmp_rentability)
+        
+        if (c != n_candidates || y != last_y || w != last_w)
+        {
+          script_rentability <- paste0(script_rentability, "\n")
+        }
+      }
+    }
+  }
+  write(script_rentability, file = paste0(tmp_folder, "/in_weeklyrentability.txt"), append = TRUE )
+  write(script_cost, file = paste0(tmp_folder, "/in_weeklycuts.txt"), append = TRUE )
 }
