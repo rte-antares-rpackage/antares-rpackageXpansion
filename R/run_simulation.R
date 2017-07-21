@@ -89,7 +89,7 @@ run_simulation <- function(name, mode = "economy", path_solver, wait = TRUE, sho
 get_whole_simulation_name <- function(name,opts = antaresRead::simOptions())
 {
   # read list of the output directory of the study
-  list_simu = list.dirs(path=paste(opts$studyPath,"/output/",sep=""), recursive =FALSE)
+  list_simu = list.dirs(path=paste0(opts$studyPath,"/output/"), recursive =FALSE)
   
   # We just keep the last folder name of each directory path
   f1 <- function(x) {unlist(strsplit(list_simu[x], "//"))[2]}

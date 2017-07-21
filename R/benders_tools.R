@@ -270,7 +270,7 @@ update_weekly_cuts <- function(current_it, candidates, output_area_w, output_lin
             inv_cost/52
       }
       
-      script_cost <- paste0(script_cost, " ", current_it$id, " ", y , " ", w, " ", w_cost)
+      script_cost <- paste0(script_cost, current_it$id, " ", y , " ", w, " ", w_cost)
       
       
       
@@ -284,15 +284,15 @@ update_weekly_cuts <- function(current_it, candidates, output_area_w, output_lin
         {
             first_h <- 7*24*(w-1)+1
             last_h <- 7*24*w
-          #tmp_rentability <- sum(as.numeric(subset(output_link_h, link == candidates[[c]]$link & mcYear == y & timeId >= first_h & timeId <= last_h)$"MARG. COST")* candidates[[c]]$link_profile[first_h:last_h,1]) - candidates[[c]]$cost /52
-          tmp_rentability <- sum(as.numeric(subset(output_link_h, link == candidates[[c]]$link & mcYear == y & timeId >= first_h & timeId <= last_h)$"MARG. COST")* candidates[[c]]$link_profile[first_h:last_h,1])
+          tmp_rentability <- sum(as.numeric(subset(output_link_h, link == candidates[[c]]$link & mcYear == y & timeId >= first_h & timeId <= last_h)$"MARG. COST")* candidates[[c]]$link_profile[first_h:last_h,1]) - candidates[[c]]$cost /52
+          #tmp_rentability <- sum(as.numeric(subset(output_link_h, link == candidates[[c]]$link & mcYear == y & timeId >= first_h & timeId <= last_h)$"MARG. COST")* candidates[[c]]$link_profile[first_h:last_h,1])
         }
         else
         {
-          #tmp_rentability <- sum(as.numeric(subset(output_link_w, link == candidates[[c]]$link & mcYear == y & timeId == w)$"MARG. COST")) - candidates[[c]]$cost /52
-          tmp_rentability <- sum(as.numeric(subset(output_link_w, link == candidates[[c]]$link & mcYear == y & timeId == w)$"MARG. COST"))
+          tmp_rentability <- sum(as.numeric(subset(output_link_w, link == candidates[[c]]$link & mcYear == y & timeId == w)$"MARG. COST")) - candidates[[c]]$cost /52
+          #tmp_rentability <- sum(as.numeric(subset(output_link_w, link == candidates[[c]]$link & mcYear == y & timeId == w)$"MARG. COST"))
         }
-        script_rentability <- paste0(script_rentability, " ", current_it$id, " ", y , " ", w , " ", candidates[[c]]$name, " ", tmp_rentability)
+        script_rentability <- paste0(script_rentability, current_it$id, " ", y , " ", w , " ", candidates[[c]]$name, " ", tmp_rentability)
         
         if (c != n_candidates || y != last_y || w != last_w)
         {

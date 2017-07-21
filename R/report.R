@@ -54,7 +54,7 @@ report <- function(benders_out = "last", file = default_report_file(opts), opts 
 #' @importFrom antaresRead simOptions
 #' @importFrom lubridate now
 #'                                       
-default_report_file <- function(directory_path)
+default_report_file_path <- function(directory_path)
 {
   # check that report folder exists, if not create it
   report_folder <- paste(directory_path,"/report",sep="")
@@ -65,4 +65,29 @@ default_report_file <- function(directory_path)
   
   # return default file name
   paste0(directory_path, "/report/" , as.character.Date(lubridate::now(), format = "%Y%m%d-%H%M") ,"_report.html") 
+}
+
+
+#' Return the default file name for the report
+#' 
+#' @param opts
+#'   list of simulation parameters returned by the function
+#'   \code{antaresRead::setSimulationPath}
+#' @return 
+#' name of the first area that the link connects
+#' 
+#' @importFrom antaresRead simOptions
+#' @importFrom lubridate now
+#'                                       
+default_report_file <- function(opts)
+{
+  # check that report folder exists, if not create it
+  report_folder <- paste0(opts$studyPath, "/user/expansion/report")
+  if(!dir.exists(report_folder))
+  {
+    dir.create(report_folder)
+  }
+  
+  # return default file name
+  paste0(opts$studyPath, "/user/expansion/report/" , as.character.Date(lubridate::now(), format = "%Y%m%d-%H%M") ,"_report.html") 
 }

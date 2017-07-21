@@ -19,7 +19,7 @@
 #' 
 # opts = antaresRead::simOptions()
 #
-read_options <- function(option_file_name = antaresRead::simOptions())
+read_options <- function(option_file_name)
 {
   assertthat::assert_that(file.exists(option_file_name))
   assertthat::assert_that(file.info(option_file_name)$size !=0)
