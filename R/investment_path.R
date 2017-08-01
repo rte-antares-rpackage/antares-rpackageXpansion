@@ -82,6 +82,8 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
   unique_key <- paste(sample(c(0:9, letters), size = 3, replace = TRUE),collapse = "")
   all_areas <- antaresRead::getAreas(opts = studies$opts[[id_years]])
   
+  
+  
   #check that the following three are equals for each iteration of the loop
   if(id_years>1){#weeks, mc_years and all_areas already defined from last iteration
     tmp_weeks<-weeks
@@ -159,7 +161,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
   
   #name rows
   #row.names(x$invested_capacities) <- sapply(candidates, FUN = function(c){paste(c$name,"_",1,sep="")})
-
+  ov_ov_cost<-list()
   
   #----------------------------------------------------------------------------------------------------------------
   # ----
@@ -318,7 +320,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
         
         #column it of the data frame x$costs
         x$costs<-data.frame(it=rep(current_it$n,studies$n_simulated_years))
-        x$costs$it<- rep(current_it$n,studies$n_simulated_years)
+        #x$costs$it<- rep(current_it$n,studies$n_simulated_years)
         
         #column s_years of the data frame x$ investment_cost
         # tmp_vec<-c()
@@ -328,36 +330,35 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
         # }
         # x$costs$s_years<-tmp_vec
         # 
-        x$costs$s_years<-c()
-        x$costs$s_years<-sapply(1:studies$n_simulated_years, FUN=function(id_years){append(x$costs$s_years,studies$simulated_years[id_years])})
-        
+        x$costs$s_years<-studies$simulated_years[1:studies$n_simulated_years]
+        x$costs$operation<-unlist(op_cost[1:studies$n_simulated_years])
+        x$costs$investment<-unlist(inv_cost[1:studies$n_simulated_years])
+        x$costs$overall<-unlist(ov_cost[1:studies$n_simulated_years])
         #column value of the data frame x$costs$investment $operation $overall
         #tmp_vec_investment<-c()
         # tmp_vec_operation<-c()
         # tmp_vec_overall<-c()
         # for(id_years in 1:studies$n_simulated_years)
         # {
-          #tmp_vec_investment<-append(tmp_vec_investment,inv_cost[id_years])
+        #   tmp_vec_investment<-append(tmp_vec_investment,inv_cost[id_years])
         #   tmp_vec_operation<-append(tmp_vec_operation,op_cost[id_years])
         #   tmp_vec_overall<-append(tmp_vec_overall,ov_cost[id_years])
         # }
-        #x$costs$investment<-tmp_vec_investment
+        # x$costs$investment<-tmp_vec_investment
         # x$costs$operation<-tmp_vec_operation
         # x$costs$overall<-tmp_vec_overall
         
-        x$costs$operation<-c()
-        x$costs$investment<-c()
-        x$costs$overall<-c()
-        x$costs$operation<-sapply(1:studies$n_simulated_years, FUN=function(id_years){append(x$costs$operation,op_cost[id_years])})
-        x$costs$investment<-sapply(1:studies$n_simulated_years, FUN=function(id_years){append(x$costs$investment,inv_cost[id_years])})
-        x$costs$overall<-sapply(1:studies$n_simulated_years, FUN=function(id_years){append(x$costs$overall,ov_cost[id_years])})
+
+        
+        ov_ov_cost[[1]]<-sum(as.numeric(subset(x$costs,it==current_it$n)$overall),na.rm=TRUE)
         }
       else{#not the first iteration, the data frame is completed
         assertthat::assert_that(current_it$n>1)
         for(id_years in 1:studies$n_simulated_years)
             {  
               x$costs<-rbind(x$costs,c(current_it$n,studies$simulated_years[id_years],inv_cost[id_years],op_cost[id_years],ov_cost[id_years]))  
-            }
+        }
+        ov_ov_cost[[current_it$n]]<-sum(as.numeric(subset(x$costs,it==current_it$n)$overall),na.rm=TRUE)
       }  
   
       
@@ -495,7 +496,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
         if(current_it$cut_type == "average")
         {
          assert_that(current_it$full)
-         update_average_cuts(current_it, candidates, output_link_s[[id_years]], output_link_h_s[[id_years]], ov_cost[[id_years]], n_w, tmp_folder, exp_options)
+         # update_average_cuts(current_it, candidates, output_link_s[[id_years]], output_link_h_s[[id_years]], ov_cost[[id_years]], n_w, tmp_folder, exp_options)
         }
         if(current_it$cut_type == "yearly")
         {
@@ -513,27 +514,30 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
 
     # solve master optimisation problem (using AMPL) and read results of
     # this problem
-    for(id_years in 1:studies$n_simulated_years){
+
     # if option "integer" has been chosen, should the integrality be added ?
     if(exp_options$master == "integer" && current_it$n > 1 && relax_integrality)
     {
-        if(convergence_relaxed(best_sol = min(as.numeric(x$costs$overall[[id_years]]), na.rm = TRUE), best_under_estimator, exp_options))
+        # if(convergence_relaxed(best_sol = min(as.numeric(x$costs$overall[[id_years]]), na.rm = TRUE), best_under_estimator, exp_options))
+        if(convergence_relaxed(best_sol = as.numeric(min(unlist(ov_ov_cost))), best_under_estimator, exp_options))
         {
           relax_integrality <- FALSE
           # reintialize ov.cost and op.costs (which are not admissible because computed with relaxed investments decisions)
-          x$costs$operation[[id_years]] <- rep(NA, current_it$n)
-          x$costs$overall[[id_years]] <- rep(NA, current_it$n)
-          current_it$need_full <- TRUE
-
+          for(id_years in 1:studies$n_simulated_years){
+            x$costs$operation[x$costs$s_years==studies$simulated_years[[id_years]]] <- rep(NA, current_it$n)
+            x$costs$overall[x$costs$s_years==studies$simulated_years[[id_years]]] <- rep(NA, current_it$n)
+            current_it$need_full <- TRUE
+          }
           if (display){cat("--- ADDITION of INTEGER variables into investment decisions --- \n")}
         }
       }
-    }
-    log<-list()
-    for(id_years in 1:studies$n_simulated_years){
+
+    #log<-list()
+    #for(id_years in 1:studies$n_simulated_years){
     # run AMPL with system command
-    log[[id_years]] <- solve_master_path(studies$opts[[id_years]], directory_path, relax_integrality)
-    }
+    #log[[id_years]] <- solve_master_path(studies$opts[[id_years]], directory_path, relax_integrality)
+    #}
+    log <- solve_master_path(directory_path, relax_integrality)
     #log<- sapply(1:studies$n_simulated_years,FUN=function(id_years){append(log,=solve_master_path(studies$opts[[id_years]], directory_path, relax_integrality))})
     # load AMPL output
     #     - underestimator
@@ -580,7 +584,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     #for(id_years in 1:studies$n_simulated_years){
       if(!all(is.na(x$costs$overall[[id_years]])))
       {
-        if(convergence(best_sol = min(sum(as.numeric(subset(x$costs,it==current_it$n)$overall)), na.rm = TRUE), best_under_estimator, exp_options))
+        if(convergence(best_sol = min(unlist(ov_ov_cost), na.rm = TRUE), best_under_estimator, exp_options))
         {
           has_converged <- TRUE
         }
@@ -696,9 +700,13 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
   
   #yet to be modified#
   # add information in the output file
+  
+  option_file_name<-paste0(directory_path,"/settings.ini")
+  x$expansion_options<-read_options(option_file_name)
+  
   for(id_years in 1:studies$n_simulated_years){
   option_file_name_2 <- paste0(studies$opts[[id_years]]$studyPath,"/user/expansion/settings.ini")
-  x$expansion_options <- read_options(option_file_name_2)
+  #x$expansion_options <- read_options(option_file_name_2)
   x$study_options <- studies$opts[[id_years]]
   x$candidates <- read_candidates(candidates_file_name,studies$opts[[id_years]])
 
@@ -736,7 +744,7 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     {
       cat("Write report in report directory \n")
     }
-
+    #browser()
     rmarkdown::render(input = system.file("rmd/report_path.Rmd", package = "antaresXpansion"),
                       output_file = default_report_file_path(directory_path), params = x, quiet = TRUE)
       
