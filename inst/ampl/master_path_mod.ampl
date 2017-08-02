@@ -12,9 +12,6 @@
 #--- SETS ----
 #-------------
 
-# set of investment candidates
-set INV_CANDIDATE ;
-
 # set of MC years
 set YEAR ;
 
@@ -24,14 +21,20 @@ set WEEK ;
 #set of benders iterations
 set ITERATION ;
 
+#set of simulated years
+set SIMULATED_YEARS;
+
+# set of investment candidates
+set INV_CANDIDATE;
+
 # set of average bender cuts
-set AVG_CUT within {ITERATION} ;
+set AVG_CUT within {SIMULATED_YEARS, ITERATION} ;
 
 # set of yearly bender cuts
-set YEARLY_CUT within {ITERATION, YEAR} ;
+set YEARLY_CUT within {SIMULATED_YEARS, ITERATION, YEAR} ;
 
 # set of weekly bender cuts
-set WEEKLY_CUT within {ITERATION, YEAR, WEEK} ;
+set WEEKLY_CUT within {SIMULATED_YEARS, ITERATION, YEAR, WEEK} ;
 
 
 
@@ -45,7 +48,7 @@ param unit_size{INV_CANDIDATE};  	# unit of each investment step
 param max_unit{INV_CANDIDATE};	 	# max number of units which can be invested
 param relaxed{INV_CANDIDATE} symbolic ;	  # (true or false) is the investment made continuously, or with steps ?
 
-param z0{ITERATION, INV_CANDIDATE} ;# invested capacity of each candidates for the given iteratoin
+param z0{SIMULATED_YEARS, ITERATION, INV_CANDIDATE} ;# invested capacity of each candidates for the given iteration
 
 # average cut
 param c0_avg{AVG_CUT} ;                 	# total costs (operation + investment) for the given iteration
@@ -66,10 +69,10 @@ param prob{y in YEAR} := 1/card(YEAR) ; 	# probability of occurence of each MC y
 #--- VARIABLES ----
 #------------------
 
-var Invested_capacity{INV_CANDIDATE} >= 0;       # capacity invested
-var N_invested{INV_CANDIDATE} integer >=0;  # number of units invested
+var Invested_capacity{SIMULATED_YEARS, INV_CANDIDATE} >= 0;       # capacity invested
+var N_invested{SIMULATED_YEARS, INV_CANDIDATE} integer >=0;  # number of units invested
 
-var Theta{YEAR, WEEK};
+var Theta{SIMULATED_YEARS, YEAR, WEEK};
 
 
 #-----------
@@ -77,18 +80,17 @@ var Theta{YEAR, WEEK};
 #-----------
 
 # objective :
-minimize master : sum{y in YEAR} ( prob[y] * sum{w in WEEK} Theta[y,w]) ;
+minimize master : sum{y in YEAR, s in SIMULATED_YEARS} ( prob[y] * sum{w in WEEK} Theta[s,y,w] )+sum{s in SIMULATED_YEARS, z in INV_CANDIDATE}c_inv[z]*Invested_capacity[s,z];
 
 # description of invested capacity :
-subject to bounds_on_invested_capacity_relaxed{z in INV_CANDIDATE : relaxed[z] == "true"} : Invested_capacity[z] <= max_unit[z] * unit_size[z]; 
+subject to bounds_on_invested_capacity_relaxed{s in SIMULATED_YEARS, z in INV_CANDIDATE : relaxed[z] == "true"} : Invested_capacity[s,z] <= max_unit[z] * unit_size[z]; 
 		 
-subject to bounds_on_invested_capacity_integer{z in INV_CANDIDATE : relaxed[z] != "true"} : N_invested[z] <= max_unit[z];
-subject to integer_constraint{z in INV_CANDIDATE : relaxed[z] != "true"} : Invested_capacity[z] = unit_size[z] * N_invested[z];		 
+subject to bounds_on_invested_capacity_integer{s in SIMULATED_YEARS, z in INV_CANDIDATE : relaxed[z] != "true"} : N_invested[s,z] <= max_unit[z];
+subject to integer_constraint{s in SIMULATED_YEARS, z in INV_CANDIDATE : relaxed[z] != "true"} : Invested_capacity[s,z] = unit_size[z] * N_invested[s,z];		 
 
 # bender's cut :
-subject to cut_avg{c in AVG_CUT} : sum{y in YEAR} ( prob[y] * sum{w in WEEK} Theta[y,w]) >=   c0_avg[c] - sum{z in INV_CANDIDATE}(lambda_avg[c,z] * (Invested_capacity[z] - z0[c,z])) ;
+subject to cut_avg{(s,c) in AVG_CUT} : sum{y in YEAR} ( prob[y] * sum{w in WEEK} Theta[s,y,w]) >=   c0_avg[s,c] - sum{z in INV_CANDIDATE}(lambda_avg[s,c,z] * (Invested_capacity[s,z] - z0[s,c,z])) ;
 
-subject to cut_yearly{(c,y) in YEARLY_CUT} : sum{w in WEEK} Theta[y,w] >=  c0_yearly[c,y] - sum{z in INV_CANDIDATE} (lambda_yearly[c,y,z] * (Invested_capacity[z] - z0[c,z]));
+subject to cut_yearly{(s,c,y) in YEARLY_CUT} : sum{w in WEEK} Theta[s,y,w] >=  c0_yearly[s,c,y] - sum{z in INV_CANDIDATE} (lambda_yearly[s,c,y,z] * (Invested_capacity[s,z] - z0[s,c,z]));
 
-subject to cut_weekly{(c,y,w) in WEEKLY_CUT} : Theta[y,w] >=  c0_weekly[c,y,w] - sum{z in INV_CANDIDATE} (lambda_weekly[c,y,w,z] * (Invested_capacity[z] - z0[c,z]));
-
+subject to cut_weekly{(s,c,y,w) in WEEKLY_CUT} : Theta[s,y,w] >=  c0_weekly[s,c,y,w] - sum{z in INV_CANDIDATE} (lambda_weekly[s,c,y,w,z] * (Invested_capacity[s,z] - z0[s,c,z]));

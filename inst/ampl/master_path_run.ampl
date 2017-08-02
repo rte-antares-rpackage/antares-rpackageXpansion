@@ -7,24 +7,23 @@
 
 reset;
 
-model master_mod.ampl;    # load model
-data  master_dat.ampl;     # load data
+model master_path_mod.ampl;    # load model
+data  master_path_dat.ampl;     # load data
 
 # include options
 include in_options.txt;
 
 option solver cbc;    # set solver (should this be an input data which could be set differently ?)
 
- # solver master problem
+# solver master problem
 solve >> out_log.txt;
-
 
 # write results (in the same folder)
 
 printf "" > out_solutionmaster.txt;
-for {z in INV_CANDIDATE}
+for {s in SIMULATED_YEARS, z in INV_CANDIDATE}
 {
-	printf "%s;%f\n", z, Invested_capacity[z] >> out_solutionmaster.txt;
+	printf "%s;%f\n", z, Invested_capacity[s,z] >> out_solutionmaster.txt;
 }
 
 printf "%f\n", master >> out_underestimator.txt;
@@ -32,9 +31,9 @@ printf "%f\n", master >> out_underestimator.txt;
 
 # write theta
 
-for {y in YEAR, w in WEEK}
+for {s in SIMULATED_YEARS, y in YEAR, w in WEEK}
 {
-	printf "%s;%s;%s;%f\n", card(ITERATION), y,w, Theta[y,w] >> out_theta.txt;
+	printf "%s;%s;%s;%s;%f\n", card(ITERATION), s,y,w, Theta[s,y,w] >> out_theta.txt;
 }
 
 

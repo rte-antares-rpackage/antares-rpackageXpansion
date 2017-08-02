@@ -3,7 +3,7 @@
 #
 # this file should have been copied in the temporary folder of 
 # current expansion optimisation, i.e.:
-# study_path/user/expansion/temp/
+# temp/
 #
 # all data files are supposed to be located in the same folder
 
@@ -18,6 +18,9 @@ set WEEK := include in_week.txt;
 
 #iteration
 set ITERATION := include in_iterations.txt;
+
+#simulated years
+set SIMULATED_YEARS := include in_simulated_years.txt;
 
 #invested capacity in the simulated iterations
 param z0 := include in_z0.txt ;
@@ -37,4 +40,3 @@ param : WEEKLY_CUT : c0_weekly := include in_weeklycuts.txt ;
 param lambda_avg := include in_avgrentability.txt ;
 param lambda_yearly := include in_yearlyrentability.txt ;
 param lambda_weekly := include in_weeklyrentability.txt ;
-
