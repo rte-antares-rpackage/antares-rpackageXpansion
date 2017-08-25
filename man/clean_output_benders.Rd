@@ -22,4 +22,3 @@ clean_output_benders(best_solution, unique_key,
 \description{
 Delete the output of the benders iterations which are not usefull anymore
 }
-

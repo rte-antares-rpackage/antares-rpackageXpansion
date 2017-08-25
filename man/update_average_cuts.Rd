@@ -38,4 +38,3 @@ Update costs and rentability files of the average cuts
 Create files in_avgrentability.txt and in_avgcuts.txt which
 will be later read by AMPL as input of the master problem
 }
-

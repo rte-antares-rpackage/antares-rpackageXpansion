@@ -24,4 +24,3 @@ make it converge to a non-optimal solution.
 \details{
 This function (tries to) corrects this by updating the constant term of the cuts
 }
-

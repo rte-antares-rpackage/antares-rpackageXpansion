@@ -20,4 +20,3 @@ ANTARES study
 \code{set_playlist} is a function which modifies the input file of an ANTARES
 study and set the playlist in order to simulate only the given MC years
 }
-

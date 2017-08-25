@@ -139,11 +139,15 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
   x$invested_capacities$s_years <-rep(studies$simulated_years[1:studies$n_simulated_years],each=n_candidates)
   
   #initialize the candidates in the data frame
-  tmp_vec <- c()
-  for(id_years in 1:studies$n_simulated_years){
-    tmp_vec <- append(tmp_vec,sapply(candidates, FUN = function(c){c$name}))
-  }
-  x$invested_capacities$candidate <- tmp_vec
+  #tmp_vec <- c()
+  #for(id_years in 1:studies$n_simulated_years){
+    #tmp_vec <- append(tmp_vec,sapply(candidates, FUN = function(c){c$name}))
+  #}
+  #x$invested_capacities$candidate <- tmp_vec
+  #FRANCOIS
+  
+  x$invested_capacities$candidate<-unlist(sapply(candidates, FUN = function(c){c$name}))
+  
   
   #set the initial values to zero in the data frame
   x$invested_capacities$value<-rep(0,n_candidates*studies$n_simulated_years)
@@ -496,12 +500,12 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
         if(current_it$cut_type == "average")
         {
          assert_that(current_it$full)
-         # update_average_cuts(current_it, candidates, output_link_s[[id_years]], output_link_h_s[[id_years]], ov_cost[[id_years]], n_w, tmp_folder, exp_options)
+         update_average_cuts_path(current_it,studies$simulated_years[[id_years]], candidates, output_link_s[[id_years]], output_link_h_s[[id_years]], op_cost[[id_years]], n_w, tmp_folder, exp_options)
         }
         if(current_it$cut_type == "yearly")
         {
           assert_that(all(current_it$weeks == weeks))
-          update_yearly_cuts(current_it,candidates, output_area_y[[id_years]], output_link_y[[id_years]], output_link_h[[id_years]], inv_cost[[id_years]], n_w, tmp_folder, exp_options)
+          update_yearly_cuts_path(current_it,studies$simulated_years[[id_years]],candidates, output_area_y[[id_years]], output_link_y[[id_years]], output_link_h[[id_years]], inv_cost[[id_years]], n_w, tmp_folder, exp_options)
         }
         if(current_it$cut_type == "weekly")
         {
@@ -622,7 +626,9 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     # display end messages
     if(has_converged & display)
     {
-      cat("--- CONVERGENCE within optimality gap: best solution = iteration ", best_solution, " --- ov.cost = ", as.numeric(subset(x$costs,it==best_solution & s_years==studies$simulated_years[[id_years]])$overall)/1000000 ," Me --- Best Lower Bound = ",best_under_estimator/1000000 , " Me \n")
+      #cat("--- CONVERGENCE within optimality gap: best solution = iteration ", best_solution, " --- ov.cost = ", as.numeric(subset(x$costs,it==best_solution & s_years==studies$simulated_years[[id_years]])$overall)/1000000 ," Me --- Best Lower Bound = ",best_under_estimator/1000000 , " Me \n")
+      cat("--- CONVERGENCE within optimality gap: best solution = iteration ", best_solution, " --- ov.cost = ", as.numeric(ov_ov_cost[[best_solution]])/1000000 ," Me --- Best Lower Bound = ",best_under_estimator/1000000 , " Me \n")
+      
     }
     if(display & current_it$n >= exp_options$max_iteration)
     {
@@ -683,7 +689,8 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
     for(id_years in 1:studies$n_simulated_years){
       cat("    . year ",studies$simulated_years[[id_years]], " : ", as.numeric(subset(x$costs,it==best_solution & s_years==studies$simulated_years[[id_years]])$overall)/1000000   ," Me \n")
     }
-    cat("--- the overall cost (sum) over the considered years is : ",sum(unlist(subset(x$costs,it==best_solution)$overall))," euros \n")
+    #cat("--- the overall cost (sum) over the considered years is : ",sum(unlist(subset(x$costs,it==best_solution)$overall))," euros \n")
+    cat("--- the overall cost (sum) over the considered years is : ",as.numeric(ov_ov_cost[[best_solution]])," euros \n")
   }
   
   
@@ -729,7 +736,9 @@ investment_path <- function(directory_path, path_solver, display = TRUE, report 
   
   # save output file
   # copy the benders_out into a Rdata in the temporary folder
-  tmp_folder <- paste(studies$opts[[id_years]]$studyPath,"/user/expansion/temp",sep="")
+  #tmp_folder <- paste0(studies$opts[[id_years]]$studyPath,"/user/expansion/temp")
+  #JUST WRITE ASSERT::THAT created at the beginning)
+  tmp_folder <- paste0(directory_path,"/temp")
   if(!dir.exists(tmp_folder))
   {
     dir.create(tmp_folder)

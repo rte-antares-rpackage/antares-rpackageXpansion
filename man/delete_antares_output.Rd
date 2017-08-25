@@ -18,4 +18,3 @@ delete_antares_output(simulation_name, opts = antaresRead::simOptions())
 \description{
 Delete the output of an ANTARES study
 }
-

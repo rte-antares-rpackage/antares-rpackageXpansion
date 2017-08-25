@@ -1,4 +1,3 @@
-
 # this file has been copied by the R-package antaresXpansion
 #
 # this file should have been copied in the temporary folder of 
@@ -37,4 +36,5 @@ param : WEEKLY_CUT : c0_weekly := include in_weeklycuts.txt ;
 param lambda_avg := include in_avgrentability.txt ;
 param lambda_yearly := include in_yearlyrentability.txt ;
 param lambda_weekly := include in_weeklyrentability.txt ;
+
 

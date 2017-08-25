@@ -36,4 +36,3 @@ ANTARES simulation
 \code{run_simulation} is a function which runs an ANTARES study
 in economic mode
 }
-

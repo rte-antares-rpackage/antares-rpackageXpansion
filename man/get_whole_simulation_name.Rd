@@ -25,4 +25,3 @@ Get the whole simulation name of an ANTARES simulation,
 as it appears in the output path,containing also the 
 date and hour identifier.
 }
-

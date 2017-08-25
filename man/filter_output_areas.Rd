@@ -27,4 +27,3 @@ ANTARES study
 \code{filter_output_areas} is a function which modifies the input file of an ANTARES
 study by updating the output filters of some areas
 }
-

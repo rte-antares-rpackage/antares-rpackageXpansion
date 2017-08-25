@@ -16,4 +16,3 @@ boolean, indicating whether or not the test are fullfilled
 \description{
 Check that the ANTARES study is ready for benders decomposition
 }
-

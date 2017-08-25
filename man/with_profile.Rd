@@ -16,4 +16,3 @@ Returns a vector of link name
 \description{
 Return vector of candidate names which have a link profile
 }
-

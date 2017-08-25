@@ -120,8 +120,8 @@ benders <- function(path_solver, display = TRUE, report = TRUE, clean = TRUE, pa
     }
     else
     { out <- c$max_invest/2}
-    return(out)}))
-  
+    #return(out)}))
+  return(0)}))
   row.names(x$invested_capacities) <- sapply(candidates, FUN = function(c){c$name})
   
   

@@ -20,4 +20,3 @@ logical, indicating weither or not the expansion problem has converged within th
 \description{
 Check the convergence of the expansion problem
 }
-

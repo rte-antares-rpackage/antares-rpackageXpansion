@@ -25,4 +25,3 @@ This function does not return anything.
 folder of the expansion planning optimisation and create the other input
 and output file of the master problem
 }
-

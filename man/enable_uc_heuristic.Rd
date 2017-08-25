@@ -22,4 +22,3 @@ ANTARES study
 study and set the simulation setting "include-tc-minstablepower", "include-tc-min-ud-time" and
 "include-dayahead"
 }
-

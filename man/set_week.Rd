@@ -21,4 +21,3 @@ ANTARES study
 study and set the "week" parameter. This parameters defines how the weekly output
 are aggregated.
 }
-

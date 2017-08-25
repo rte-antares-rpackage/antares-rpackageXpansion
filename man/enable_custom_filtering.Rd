@@ -20,4 +20,3 @@ ANTARES study
 \code{enable_custom_filtering} is a function which modifies the input file of an ANTARES
 study by enabling (or disabling) the custom filtering of the output
 }
-

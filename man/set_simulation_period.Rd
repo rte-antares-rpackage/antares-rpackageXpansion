@@ -20,4 +20,3 @@ set_simulation_period(weeks, opts = antaresRead::simOptions())
 Set period on which we want the ANTARES simulation to run.
 Update "first day" and "last day" parameters of the ANTARES study.
 }
-

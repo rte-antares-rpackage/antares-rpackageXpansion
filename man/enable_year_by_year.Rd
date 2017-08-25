@@ -20,4 +20,3 @@ ANTARES study
 \code{enable_year_by_year} is a function which modifies the input file of an ANTARES
 study by activating (or disactivating) the year by year writing of the output
 }
-

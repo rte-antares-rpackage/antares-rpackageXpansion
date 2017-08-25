@@ -141,7 +141,9 @@ Optimality gap - Distance between greatest lower bound and best solution -  equa
 {
 cat( sum(unlist(as.numeric(subset(x$costs,it==best_solution)$overall))) - max(unlist(x$under_estimator)), "euros \n")
 cat("best under estimator: ", max(unlist(x$under_estimator))," \n")
-cat("value of the objective function: (sum of the overall costs on the simulated years) ", sum(unlist(as.numeric(subset(x$costs,it==best_solution)$overall))))
+cat("value of the objective function: (sum of the overall costs on the simulated years) ",
+as.numeric(ov_ov_cost[[best_solution]]))    
+#sum(unlist(as.numeric(subset(x$costs,it==best_solution)$overall))))
 }
 ```
 

@@ -38,4 +38,3 @@ Update costs and rentability files of the yearly cuts
 Create files in_yearlyrentability.txt and in_yearlycuts.txt which
 will be later read by AMPL as input of the master problem
 }
-

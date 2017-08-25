@@ -18,4 +18,3 @@ Returns a vector of the identifier of the simulated MC year
 will be simulated, taking into account the potential use of a 
 playlist which can disactivate some MC years
 }
-

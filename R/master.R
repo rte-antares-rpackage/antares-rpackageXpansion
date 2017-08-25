@@ -260,9 +260,8 @@ solve_master <- function(opts = antaresRead::simOptions(), relax_integrality = F
 #' located in the temporary folder of the current expansion 
 #' planning optimisation
 #' 
-#' @param opts
-#'   list of simulation parameters returned by the function
-#'   \code{antaresRead::setSimulationPath}
+#' @param directory_path
+#'   path of the directory with the necessary files to run investment_path.R
 #' @param relax_integrality
 #'   logical, indicating whether (TRUE) or not (FALSE) the integer variables
 #'   should be relaxed
@@ -274,7 +273,7 @@ solve_master <- function(opts = antaresRead::simOptions(), relax_integrality = F
 #solve_master_path <- function(opts = antaresRead::simOptions(), relax_integrality = FALSE)
 
 
-solve_master_path <- function(opts, directory_path, relax_integrality = FALSE)
+solve_master_path <- function(directory_path, relax_integrality = FALSE)
 {#call the function with opts=studies[[1]]$opts
   tmp_folder <- paste0(directory_path,"/temp")
   

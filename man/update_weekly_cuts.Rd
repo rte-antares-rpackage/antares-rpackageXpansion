@@ -36,4 +36,3 @@ Update costs and rentability files of the weekly cuts
 Create files in_weeklyrentability.txt and in_weeklycuts.txt which
 will be later read by AMPL as input of the master problem
 }
-

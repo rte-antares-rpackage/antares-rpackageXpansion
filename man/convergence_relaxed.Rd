@@ -20,4 +20,3 @@ logical, indicating weither or not the relaxed problem has converged within the 
 \description{
 Check the convergence of the relaxed expansion problem
 }
-

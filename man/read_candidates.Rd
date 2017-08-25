@@ -4,7 +4,7 @@
 \alias{read_candidates}
 \title{Read investment candidates with their characteristics}
 \usage{
-read_candidates(opts = antaresRead::simOptions())
+read_candidates(candidates_file_name, opts)
 }
 \arguments{
 \item{opts}{list of simulation parameters returned by the function
@@ -14,8 +14,7 @@ read_candidates(opts = antaresRead::simOptions())
 Returns a list containing the different investment candidates.
 }
 \description{
-\code{read_candidates} is a function which read the investments candidates
+\code{read_candidates} is a function which reads the investments candidates
 of the expansion planning problem and their characteristics. The information on
 the candidates is stored in the file antaresStudyPath/user/expansion/candidates.ini.
 }
-

@@ -16,4 +16,3 @@ name of the first area that the link connects
 \description{
 Return the default file name for the report
 }
-

@@ -23,4 +23,3 @@ nothing
 \description{
 Set ANTARES study options related to the current benders decomposition
 }
-

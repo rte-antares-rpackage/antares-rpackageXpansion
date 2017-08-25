@@ -22,4 +22,3 @@ ANTARES study
 study and set the "simulation_end" parameter. This parameters defines which is the last
 day of the study horizon which should be simulated
 }
-

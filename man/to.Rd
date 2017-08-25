@@ -15,4 +15,3 @@ name of the second area that the link connects
 \description{
 Return the second area that a link connects
 }
-

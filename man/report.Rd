@@ -26,4 +26,3 @@ directory user/expansion/report of the current ANTARES study}
 Write report which summarizes the results of the expansion
 planning
 }
-

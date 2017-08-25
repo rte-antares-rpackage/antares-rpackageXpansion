@@ -23,4 +23,3 @@ ANTARES study
 \code{enable_hurdle_costs} is a function which modifies the input file of an ANTARES
 study and enable (or disable) the hurdle costs of a link
 }
-

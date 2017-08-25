@@ -29,4 +29,3 @@ this function therefore choses a mc_years list and a weeks list which
 covers most of the weeks with strictly positive weight, but not too many 
 weeks with a weight equal to zero
 }
-

@@ -107,7 +107,7 @@ week_selection <- function(current_it, mc_years, weeks, tmp_folder, exp_options)
       current_it$last_full <- current_it$n
       return(current_it)
     }
-    # otherwise, we rerturn a partial iteration
+    # otherwise, we return a partial iteration
     else
     {
       current_it$full <- FALSE

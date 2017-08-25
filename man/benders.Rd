@@ -33,4 +33,3 @@ is the one set in advanced_settings/simulation_cores (see ANTARES interface).}
 \description{
 Launch benders decomposition
 }
-

@@ -22,4 +22,3 @@ ANTARES study
 study and set the "simulation_start" parameter. This parameters defines which is the first
 day of the study horizon which should be simulated
 }
-

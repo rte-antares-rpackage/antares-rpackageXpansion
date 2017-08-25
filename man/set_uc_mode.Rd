@@ -20,4 +20,3 @@ ANTARES study
 \code{set_uc_mode} is a function which modifies the input file of an ANTARES
 study and set the simulation setting "unit-commitment-mode"
 }
-

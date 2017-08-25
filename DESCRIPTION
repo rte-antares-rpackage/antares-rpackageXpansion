@@ -18,6 +18,6 @@ Imports:
     data.table,
     magrittr,
     plotly
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 Suggests: knitr
 VignetteBuilder: knitr

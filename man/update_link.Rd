@@ -26,4 +26,3 @@ ANTARES study
 \code{update_link} is a function which modifies the input file of an ANTARES
 study and update the properties of a link
 }
-

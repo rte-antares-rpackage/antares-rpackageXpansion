@@ -25,4 +25,3 @@ updated current iteration characteristics
 week_selection is a function which select the MC years and 
 weeks which will be simulated during this iteration
 }
-

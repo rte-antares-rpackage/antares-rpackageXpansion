@@ -15,4 +15,3 @@ name of the first area that the link connects
 \description{
 Return the first area that a link connects
 }
-
